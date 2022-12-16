@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
-from db.database import db
+from tgbot.db.database import db
 
 
 class Keyboards:

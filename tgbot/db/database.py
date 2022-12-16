@@ -10,7 +10,7 @@ class DataBase:
             return cls.instance
         return cls.instance
 
-    def __init__(self, db_name='db/database.db'):
+    def __init__(self, db_name='tgbot/db/database.db'):
         self.name = db_name
         self.conn = self.connect()
         self.cursor = self.conn.cursor()
