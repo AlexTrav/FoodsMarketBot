@@ -15,19 +15,19 @@ class DataBase:
         self.conn = self.connect()
         self.cursor = self.conn.cursor()
 
+    def __del__(self):
+        self.cursor.close()
+        self.conn.close()
+
     def connect(self):
         try:
             return sq.connect(self.name)
         except sq.Error:
-            pass
+            return 'Ошибка соединения'
 
     def get_data(self, table: str) -> list:
         self.cursor.execute(f'SELECT * FROM {table}')
         return self.cursor.fetchall()
-
-    def __del__(self):
-        self.cursor.close()
-        self.conn.close()
 
 
 db = DataBase()
