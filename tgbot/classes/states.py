@@ -6,5 +6,6 @@ class UserStatesGroup(StatesGroup):
     product_catalog = State()
     product_subcatalog = State()
     products = State()
+    product = State()
     my_orders = State()
 
