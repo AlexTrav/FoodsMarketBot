@@ -85,3 +85,5 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(product_catalog_callback_query)
     dispatcher.register_callback_query_handler(product_subcatalog_callback_query)
     dispatcher.register_callback_query_handler(products_callback_query)
+    dispatcher.register_callback_query_handler(product_callback_query)
+    dispatcher.register_callback_query_handler(add_product_callback_query)
