@@ -9,7 +9,10 @@ class Keyboards:
     def get_start_ikm() -> InlineKeyboardMarkup:
         start_ikm = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text='Каталог продуктов', callback_data='product_catalog')],
-            [InlineKeyboardButton(text='Мои заказы', callback_data='my_orders')]
+            [InlineKeyboardButton(text='Моя корзина', callback_data='my_basket')],
+            [InlineKeyboardButton(text='Мои заказы', callback_data='my_orders')],
+            [InlineKeyboardButton(text='Поиск', callback_data='search')],
+            [InlineKeyboardButton(text='Работа', callback_data='work')]
         ])
         return start_ikm
 
