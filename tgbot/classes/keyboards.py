@@ -11,7 +11,7 @@ class Keyboards:
             [InlineKeyboardButton(text='Каталог продуктов', callback_data='product_catalog')],
             [InlineKeyboardButton(text='Моя корзина', callback_data='my_basket')],
             [InlineKeyboardButton(text='Мои заказы', callback_data='my_orders')],
-            [InlineKeyboardButton(text='Поиск', callback_data='search')],
+            [InlineKeyboardButton(text='Глобальный поиск', callback_data='search')],
             [InlineKeyboardButton(text='Работа', callback_data='work')]
         ])
         return start_ikm
@@ -40,7 +40,7 @@ class Keyboards:
     @staticmethod
     def get_products(subcategory_id) -> InlineKeyboardMarkup:
         cb = CallbackData('products', 'id', 'action')
-        products_ikm = InlineKeyboardMarkup(row_width=4)
+        products_ikm = InlineKeyboardMarkup(row_width=3)
         buttons = []
         for product in db.get_data(table='products'):
             if product[1] == int(subcategory_id):
@@ -53,11 +53,14 @@ class Keyboards:
         cb = CallbackData('product', 'id', 'action')
         for product in db.get_data(table='products'):
             if product[0] == int(product_id):
-                text = f'Название: {product[2]}. \n' \
-                       f'Производитель: {product[3]}. \n' \
-                       f'Брэнд: {product[4]}. \n' \
-                       f'Описание: {product[5]}. \n' \
-                       f'Цена: {product[6]}₸. \n'
+                text = f'Название: {product[2]}. \n'
+                if product[3] != '':
+                    text += f'Производитель: {product[3]}. \n'
+                if product[4] != '':
+                    text += f'Брэнд: {product[4]}. \n'
+                if product[5] != '':
+                    text += f'Описание: {product[5]} \n'
+                text += f'Цена: {product[6]}₸. \n'
                 photo = product[7]
                 product_ikm = InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(text='Добавить в корзину', callback_data=cb.new(id=product[0], action='add_to_basket'))],
