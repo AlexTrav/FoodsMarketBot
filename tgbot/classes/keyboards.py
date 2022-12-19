@@ -27,7 +27,7 @@ class Keyboards:
         return product_catalog_ikm
 
     @staticmethod
-    def get_product_subcatalog(category_id) -> InlineKeyboardMarkup:
+    def get_product_subcatalog(category_id: int) -> InlineKeyboardMarkup:
         cb = CallbackData('subcategories', 'id', 'action')
         product_subcatalog_ikm = InlineKeyboardMarkup(row_width=3)
         buttons = []
@@ -38,7 +38,7 @@ class Keyboards:
         return product_subcatalog_ikm
 
     @staticmethod
-    def get_products(subcategory_id) -> InlineKeyboardMarkup:
+    def get_products(subcategory_id: int) -> InlineKeyboardMarkup:
         cb = CallbackData('products', 'id', 'action')
         products_ikm = InlineKeyboardMarkup(row_width=3)
         buttons = []
@@ -49,7 +49,7 @@ class Keyboards:
         return products_ikm
 
     @staticmethod
-    def get_product(product_id) -> tuple:
+    def get_product(product_id: int, user_id: int) -> tuple:
         cb = CallbackData('product', 'id', 'action')
         for product in db.get_data(table='products'):
             if product[0] == int(product_id):
@@ -62,9 +62,16 @@ class Keyboards:
                     text += f'Описание: {product[5]} \n'
                 text += f'Цена: {product[6]}₸. \n'
                 photo = product[7]
-                product_ikm = InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text='Добавить в корзину', callback_data=cb.new(id=product[0], action='add_to_basket'))],
-                    [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
-                ])
+                entries = db.get_data(table='basket', where=2, operand1='user_id', operand2=user_id, operand3='product_id', operand4=product_id)
+                if len(entries) == 0:
+                    product_ikm = InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text='Добавить в корзину', callback_data=cb.new(id=product[0], action='add_basket_count'))],
+                        [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
+                    ])
+                else:
+                    product_ikm = InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text='-', callback_data=cb.new(id=product[0], action='dec_basket_count')), InlineKeyboardButton(text='+', callback_data=cb.new(id=product[0], action='inc_basket_count'))],
+                        [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
+                    ])
                 return text, product_ikm, photo
         return ()

@@ -1,11 +1,14 @@
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
+from aiogram.types import InputMedia
 from aiogram.utils.callback_data import CallbackData
 
 from tgbot.loader import dp
 
 from tgbot.classes.states import UserStatesGroup
 from tgbot.classes.keyboards import Keyboards
+
+from tgbot.db.database import db
 
 
 @dp.callback_query_handler(text='product_catalog', state='*')
@@ -56,14 +59,14 @@ async def product_callback_query(callback: types.CallbackQuery, callback_data: d
     else:
         await callback.message.delete()
         await UserStatesGroup.product.set()
-        text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'])
+        text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'], user_id=callback.from_user.id)
         await callback.message.answer_photo(photo=photo,
                                             caption=text,
                                             reply_markup=keyboard)
     await callback.answer()
 
 
-@dp.callback_query_handler(CallbackData('product', 'id', 'action').filter(), state=UserStatesGroup.product)
+@dp.callback_query_handler(CallbackData('product', 'id', 'action').filter(), state=[UserStatesGroup.product, UserStatesGroup.adding_to_basket])
 async def add_product_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
         await UserStatesGroup.products.set()
@@ -71,14 +74,14 @@ async def add_product_callback_query(callback: types.CallbackQuery, callback_dat
         async with state.proxy() as data:
             await callback.message.answer(text='Выберите продукт:',
                                           reply_markup=Keyboards.get_products(subcategory_id=data['product_subcatalog']))
-    # else:
-    #     await callback.message.delete()
-    #     await UserStatesGroup.product.set()
-    #     text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'])
-    #     await callback.message.answer_photo(photo=photo,
-    #                                         caption=text,
-    #                                         reply_markup=keyboard)
-    await callback.answer()
+        await callback.answer()
+    else:
+        await UserStatesGroup.adding_to_basket.set()
+        answer, is_delete = db.working_with_basket(state=callback_data['action'], user_id=callback.from_user.id, product_id=callback_data['id'])
+        if callback_data['action'] == 'add_basket_count' or callback_data['action'] == 'dec_basket_count' and is_delete:
+            text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'], user_id=callback.from_user.id)
+            await callback.message.edit_media(InputMedia(media=photo, caption=text), reply_markup=keyboard)
+        await callback.answer(text=answer)
 
 
 def register_handlers(dispatcher: Dispatcher):
