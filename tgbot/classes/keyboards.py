@@ -75,3 +75,26 @@ class Keyboards:
                     ])
                 return text, product_ikm, photo
         return ()
+
+    @staticmethod
+    def get_basket(user_id: int) -> tuple:
+        cb = CallbackData('basket', 'action')
+        text = ''
+        total_cost = 0
+        i = 1
+        for entry in db.get_data(table='basket', where=1, operand1='user_id', operand2=user_id):
+            name, cost = db.get_data(get_name_product=1, field1='name', field2='cost', operand1=entry[2])[0]
+            text += f'<b>{i}.</b> <b>Название</b> {name}; <b>Кол.</b> {entry[3]}; <b>Сумма</b> {cost * entry[3]}₸.' + '\n'
+            total_cost += cost * entry[3]
+            i += 1
+        text += f'<b>К оплате:</b> {total_cost}₸'
+        basket_ikm = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text='Оформить заказ', callback_data=cb.new(action='place_an_order'))],
+            [InlineKeyboardButton(text='Редактировать корзину', callback_data=cb.new(action='edit_basket'))],
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
+        ])
+        return text, basket_ikm
+
+    @staticmethod
+    def get_edit_basket(user_id: int) -> tuple:
+        pass

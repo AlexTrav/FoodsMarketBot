@@ -8,5 +8,7 @@ class UserStatesGroup(StatesGroup):
     products = State()
     product = State()
     adding_to_basket = State()
+    my_basket = State()
+    edit_basket = State()
     my_orders = State()
 

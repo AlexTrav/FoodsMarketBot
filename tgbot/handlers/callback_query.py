@@ -84,9 +84,35 @@ async def add_product_callback_query(callback: types.CallbackQuery, callback_dat
         await callback.answer(text=answer)
 
 
+@dp.callback_query_handler(text='my_basket',  state='*')
+async def get_user_basket_callback_query(callback: types.CallbackQuery):
+    await UserStatesGroup.my_basket.set()
+    text, keyboard = Keyboards.get_basket(callback.from_user.id)
+    await callback.message.edit_text(text=text,
+                                     reply_markup=keyboard,
+                                     parse_mode='HTML')
+    await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('basket', 'action').filter(), state=UserStatesGroup.my_basket)
+async def place_an_order_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await UserStatesGroup.start.set()
+        await callback.message.edit_text(text='Добро пожаловать в FoodsMarket!',
+                                         reply_markup=Keyboards.get_start_ikm())
+    else:
+        if callback_data['action'] == 'edit_basket':
+            UserStatesGroup.edit_basket.set()
+            # await callback.message.edit_text(text='Редактирование корзины',
+            #                                  reply_markup=Keyboards.get_edit_basket(callback_data['orders_entries']))
+            await callback.answer()
+
+
 def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(product_catalog_callback_query)
     dispatcher.register_callback_query_handler(product_subcatalog_callback_query)
     dispatcher.register_callback_query_handler(products_callback_query)
     dispatcher.register_callback_query_handler(product_callback_query)
     dispatcher.register_callback_query_handler(add_product_callback_query)
+    dispatcher.register_callback_query_handler(get_user_basket_callback_query)
+    dispatcher.register_callback_query_handler(place_an_order_callback_query)
