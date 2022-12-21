@@ -32,7 +32,10 @@ class DataBase:
             if kwargs['where'] == 2:
                 self.cursor.execute(f"SELECT * FROM {kwargs['table']} WHERE {kwargs['operand1']} = {kwargs['operand2']} AND {kwargs['operand3']} = {kwargs['operand4']}")
         elif 'get_name_product' in kwargs:
-            self.cursor.execute(f"SELECT {kwargs['field1']}, {kwargs['field2']} FROM products WHERE id = {kwargs['operand1']}")
+            if 'field1' in kwargs and 'field2' in kwargs:
+                self.cursor.execute(f"SELECT {kwargs['field1']}, {kwargs['field2']} FROM products WHERE id = {kwargs['operand1']}")
+            elif 'field1' in kwargs:
+                self.cursor.execute(f"SELECT {kwargs['field1']} FROM products WHERE id = {kwargs['operand1']}")
         else:
             self.cursor.execute(f"SELECT * FROM {kwargs['table']}")
         return self.cursor.fetchall()

@@ -1,3 +1,6 @@
+import types
+
+from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
 
@@ -10,5 +13,5 @@ class UserStatesGroup(StatesGroup):
     adding_to_basket = State()
     my_basket = State()
     edit_basket = State()
+    place_an_order = State()
     my_orders = State()
-
