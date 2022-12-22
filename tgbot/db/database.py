@@ -65,5 +65,14 @@ class DataBase:
         self.conn.commit()
         return answer, is_delete
 
+    def working_with_place_an_order(self, **kwargs):
+        if 'insert_in_orders' in kwargs:
+            self.cursor.execute(f'INSERT INTO orders(reg_date) VALUES ({kwargs["date"]})')
+        if 'insert_in_order_items' in kwargs:
+            self.cursor.execute(f'INSERT INTO order_items(order_id, user_id, product_id, `count`, cost) VALUES ({kwargs["order_id"]}, {kwargs["user_id"]}, {kwargs["product_id"]}, {kwargs["count"]}, {kwargs["cost"]})')
+        if 'clear_basket' in kwargs:
+            self.cursor.execute(f'DELETE FROM basket WHERE user_id = {kwargs["user_id"]}')
+        self.conn.commit()
+
 
 db = DataBase()

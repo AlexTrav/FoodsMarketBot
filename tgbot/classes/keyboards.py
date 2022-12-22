@@ -1,3 +1,4 @@
+from datetime import datetime
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 from tgbot.db.database import db
@@ -33,7 +34,7 @@ class Keyboards:
         buttons = []
         for subcategory in db.get_data(table='subcategories_products'):
             if subcategory[1] == int(category_id):
-                buttons.append(InlineKeyboardButton(text=subcategory[2],callback_data=cb.new(id=subcategory[0], action='subcategory')))
+                buttons.append(InlineKeyboardButton(text=subcategory[2], callback_data=cb.new(id=subcategory[0], action='subcategory')))
         product_subcatalog_ikm.add(*buttons).add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
         return product_subcatalog_ikm
 
@@ -119,3 +120,40 @@ class Keyboards:
             buttons.append(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
             basket_edit_ikm.add(*buttons)
             return text, basket_edit_ikm
+
+    @staticmethod
+    def place_an_order(user_id: int) -> str:
+        if len(db.get_data(table='basket', where=1, operand1='user_id', operand2=user_id)) > 0:
+            int_current_datetime = datetime.now().strftime("%Y%m%d%H%M")
+            db.working_with_place_an_order(insert_in_orders=1, date=int_current_datetime)
+            order_id = db.get_data(table='orders', where=1, operand1='reg_date', operand2=int_current_datetime)[0][0]
+            for entry in db.get_data(table='basket', where=1, operand1='user_id', operand2=user_id):
+                cost = db.get_data(table='products', where=1, operand1='id', operand2=entry[2])[0][6]
+                db.working_with_place_an_order(insert_in_order_items=1, order_id=order_id, user_id=user_id, product_id=entry[2], count=entry[3], cost=cost)
+            text = 'Заказ успешно оформлен!' + '\n'
+            db.working_with_place_an_order(clear_basket=1, user_id=user_id)
+            text += 'Корзина очищена!'
+        else:
+            text = 'Корзина пуста! Сначало добавьте товар!'
+        return text
+
+    @staticmethod
+    def get_orders(user_id: int) -> InlineKeyboardMarkup:
+        cb = CallbackData('orders', 'id', 'action')
+        orders_ikm = InlineKeyboardMarkup(row_width=3)
+        buttons = []
+        for entry in db.get_data(table='order_items', where=1, operand1='user_id', operand2=user_id):
+            reg_date = str(db.get_data(table='orders', where=1, operand1='id', operand2=entry[1])[0][1])
+            res_date = reg_date[6:8] + '.' + reg_date[4:6] + '.' + reg_date[0:4] + ' ' + reg_date[8:10] + ':' + reg_date[10:12]
+            buttons.append(InlineKeyboardButton(text=f'{res_date}', callback_data=cb.new(id=entry[0], action='order_item')))
+            if db.get_data(table='orders', where=1, operand1='id', operand2=entry[1])[0][2] == 0:
+                buttons.append(InlineKeyboardButton(text='Не оплачен', callback_data=cb.new(id=-2, action='is_paid')))
+            else:
+                buttons.append(InlineKeyboardButton(text='Оплачен', callback_data=cb.new(id=-2, action='is_paid')))
+            if db.get_data(table='orders', where=1, operand1='id', operand2=entry[1])[0][3] == 0:
+                buttons.append(InlineKeyboardButton(text='Не доставлен', callback_data=cb.new(id=-2, action='is_delivered')))
+            else:
+                buttons.append(InlineKeyboardButton(text='Доставлен', callback_data=cb.new(id=-2, action='is_delivered')))
+        buttons.append(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+        orders_ikm.add(*buttons)
+        return orders_ikm

@@ -125,8 +125,13 @@ async def place_an_order_callback_query(callback: types.CallbackQuery, callback_
                                          reply_markup=Keyboards.get_start_ikm())
     else:
         if callback_data['action'] == 'place_an_order':
-            pass
-            # if db.get_data(table='basket', where=1, operand1='user_id', operand2=callback.from_user.id):
+            answer = Keyboards.place_an_order(user_id=callback.from_user.id)
+            if answer != 'Корзина пуста! Сначало добавьте товар!':
+                text, keyboard = Keyboards.get_basket(callback.from_user.id)
+                await callback.message.edit_text(text=text,
+                                                 reply_markup=keyboard,
+                                                 parse_mode='HTML')
+            await callback.answer(answer)
         else:
             await UserStatesGroup.edit_basket.set()
             text, keyboard = Keyboards.get_edit_basket(callback.from_user.id)
@@ -169,6 +174,14 @@ async def edit_basket_callback_query(callback: types.CallbackQuery, callback_dat
         elif callback_data['action'] == '':
             await callback.answer(text='Количетсво товара:')
 
+    await callback.answer()
+
+
+@dp.callback_query_handler(text='my_orders',  state='*')
+async def get_user_orders_callback_query(callback: types.CallbackQuery):
+    await UserStatesGroup.my_orders.set()
+    await callback.message.edit_text(text='Мои заказы:',
+                                     reply_markup=Keyboards.get_orders(callback.from_user.id))
     await callback.answer()
 
 
