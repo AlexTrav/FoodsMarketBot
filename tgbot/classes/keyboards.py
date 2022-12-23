@@ -18,6 +18,41 @@ class Keyboards:
         return start_ikm
 
     @staticmethod
+    def get_balance_user(user_id: int) -> tuple:
+        db.check_user(user_id=user_id)
+        text = f"Ваш баланс: {db.get_data(table='users', where=1, operand1='id', operand2=user_id)[0][1]}₸"
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text='Понятно', callback_data='delete_balance_message')]
+        ])
+        return text, keyboard
+
+    @staticmethod
+    def add_balance_user(user_id: int) -> tuple:
+        db.check_user(user_id=user_id)
+        db.add_balance(user_id=user_id)
+        text = f"Ваш баланс пополнен на 10000₸"
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text='Понятно', callback_data='delete_balance_message')]
+        ])
+        return text, keyboard
+
+    @staticmethod
+    def set_address_user(**kwargs) -> tuple:
+        db.check_user(user_id=kwargs['user_id'])
+        if kwargs['pos'] == 0:
+            text = f'Укажите актуальный адрес доставки следуюищим сообщением:'
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text='Понятно', callback_data='delete_balance_message')]
+            ])
+        else:
+            db.update_address(user_id=kwargs['user_id'], address=kwargs['address'])
+            text = f"Адрес: {kwargs['address']} утвреждён"
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text='Понятно', callback_data='delete_balance_message')]
+            ])
+        return text, keyboard
+
+    @staticmethod
     def get_product_catalog() -> InlineKeyboardMarkup:
         cb = CallbackData('categories', 'id', 'action')
         product_catalog_ikm = InlineKeyboardMarkup(row_width=2)
@@ -182,3 +217,11 @@ class Keyboards:
                 order_item_ikm.add(InlineKeyboardButton(text='Доставлен', callback_data=cb.new(id=-3, action='delivered')))
         order_item_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
         return text, order_item_ikm
+
+    @staticmethod
+    def get_total_cost(order_id: int) -> int:
+        total_cost = 0
+        for entry in db.get_data(table='order_items', where=1, operand1='order_id', operand2=order_id):
+            total_cost += entry[5] * entry[4]
+        return total_cost
+

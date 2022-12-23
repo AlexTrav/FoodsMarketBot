@@ -11,6 +11,13 @@ from tgbot.classes.keyboards import Keyboards
 from tgbot.db.database import db
 
 
+@dp.callback_query_handler(text='delete_balance_message', state='*')
+async def my_balance_callback_query(callback: types.CallbackQuery):
+    await UserStatesGroup.start.set()
+    await callback.answer('Сообщение удалено')
+    await callback.message.delete()
+
+
 @dp.callback_query_handler(text='product_catalog', state='*')
 async def product_catalog_callback_query(callback: types.CallbackQuery):
     await UserStatesGroup.product_catalog.set()
@@ -213,7 +220,18 @@ async def order_payment(callback: types.CallbackQuery, callback_data: dict):
         await callback.answer()
     else:
         if callback_data['action'] == 'to_pay':
-            pass
+            if db.check_enough_money(user_id=callback.from_user.id, sum=Keyboards.get_total_cost(order_id=callback_data['id'])):
+                if db.check_address(user_id=callback.from_user.id):
+                    db.order_payment(user_id=callback.from_user.id, order_id=callback_data['id'], sum=Keyboards.get_total_cost(order_id=callback_data['id']))
+                    text, keyboard = Keyboards.get_order_item(order_id=callback_data['id'])
+                    await callback.message.edit_text(text=text,
+                                                     reply_markup=keyboard,
+                                                     parse_mode='HTML')
+                    await callback.answer('Заказ успешно оплачен и отправлен на доставку!')
+                else:
+                    await callback.answer('Адрес доставки не указан, укажите его /set_address')
+            else:
+                await callback.answer('У вас не достаточно средств!')
         if callback_data['action'] == 'paid_for':
             await callback.answer('Заказ уже оплачен')
         if callback_data['action'] == 'not_delivered':

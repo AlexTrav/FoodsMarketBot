@@ -40,6 +40,31 @@ class DataBase:
             self.cursor.execute(f"SELECT * FROM {kwargs['table']}")
         return self.cursor.fetchall()
 
+    def check_user(self, **kwargs):
+        self.cursor.execute('SELECT * FROM users')
+        users = self.cursor.fetchall()
+        for user in users:
+            if kwargs['user_id'] not in user:
+                self.cursor.execute(f'INSERT INTO users(id) VALUES ({kwargs["user_id"]})')
+                self.conn.commit()
+
+    def add_balance(self, **kwargs):
+        self.cursor.execute(f'UPDATE users SET balance = balance + 10000 WHERE id = {kwargs["user_id"]}')
+        self.conn.commit()
+
+    def check_enough_money(self, **kwargs):
+        self.cursor.execute(f'SELECT balance FROM users WHERE id = {kwargs["user_id"]}')
+        return self.cursor.fetchall()[0][0] >= kwargs['sum']
+
+    def check_address(self, **kwargs):
+        self.cursor.execute(f'SELECT address FROM users WHERE id = {kwargs["user_id"]}')
+        tmp = self.cursor.fetchall()
+        return tmp[0][0] is not None
+
+    def update_address(self, **kwargs):
+        self.cursor.execute(f'UPDATE users SET address = "{kwargs["address"]}" WHERE id = {kwargs["user_id"]}')
+        self.conn.commit()
+
     def working_with_basket(self, **kwargs):
         answer = ''
         count_entries = 0
@@ -72,6 +97,11 @@ class DataBase:
             self.cursor.execute(f'INSERT INTO order_items(order_id, user_id, product_id, `count`, cost) VALUES ({kwargs["order_id"]}, {kwargs["user_id"]}, {kwargs["product_id"]}, {kwargs["count"]}, {kwargs["cost"]})')
         if 'clear_basket' in kwargs:
             self.cursor.execute(f'DELETE FROM basket WHERE user_id = {kwargs["user_id"]}')
+        self.conn.commit()
+
+    def order_payment(self, **kwargs):
+        self.cursor.execute(f'UPDATE users SET balance = balance - {kwargs["sum"]} WHERE id = {kwargs["user_id"]}')
+        self.cursor.execute(f'UPDATE orders SET is_paid = 1 WHERE id = {kwargs["order_id"]}')
         self.conn.commit()
 
 
