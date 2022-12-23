@@ -92,7 +92,9 @@ class DataBase:
 
     def working_with_place_an_order(self, **kwargs):
         if 'insert_in_orders' in kwargs:
-            self.cursor.execute(f'INSERT INTO orders(reg_date) VALUES ({kwargs["date"]})')
+            self.cursor.execute(f'INSERT INTO orders(user_id, reg_date) VALUES ({kwargs["user_id"]}, {kwargs["date"]})')
+        if 'insert_in_orders_total_cost' in kwargs:
+            self.cursor.execute(f'UPDATE orders SET total_cost = {kwargs["total_cost"]} WHERE id = {kwargs["order_id"]} AND user_id = {kwargs["user_id"]}')
         if 'insert_in_order_items' in kwargs:
             self.cursor.execute(f'INSERT INTO order_items(order_id, user_id, product_id, `count`, cost) VALUES ({kwargs["order_id"]}, {kwargs["user_id"]}, {kwargs["product_id"]}, {kwargs["count"]}, {kwargs["cost"]})')
         if 'clear_basket' in kwargs:
