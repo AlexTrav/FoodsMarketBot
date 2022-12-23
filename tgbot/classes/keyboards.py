@@ -145,7 +145,7 @@ class Keyboards:
         for entry in db.get_data(table='order_items', where=1, operand1='user_id', operand2=user_id):
             reg_date = str(db.get_data(table='orders', where=1, operand1='id', operand2=entry[1])[0][1])
             res_date = reg_date[6:8] + '.' + reg_date[4:6] + '.' + reg_date[0:4] + ' ' + reg_date[8:10] + ':' + reg_date[10:12]
-            buttons.append(InlineKeyboardButton(text=f'{res_date}', callback_data=cb.new(id=entry[0], action='order_item')))
+            buttons.append(InlineKeyboardButton(text=f'{res_date}', callback_data=cb.new(id=entry[1], action='order_item')))
             if db.get_data(table='orders', where=1, operand1='id', operand2=entry[1])[0][2] == 0:
                 buttons.append(InlineKeyboardButton(text='Не оплачен', callback_data=cb.new(id=-2, action='is_paid')))
             else:
@@ -157,3 +157,28 @@ class Keyboards:
         buttons.append(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
         orders_ikm.add(*buttons)
         return orders_ikm
+
+    @staticmethod
+    def get_order_item(order_id: int) -> tuple:
+        cb = CallbackData('order_item', 'id', 'action')
+        order = db.get_data(table='orders', where=1, operand1='id', operand2=order_id)
+        total_cost = 0
+        text = ''
+        i = 1
+        for entry in db.get_data(table='order_items', where=1, operand1='order_id', operand2=order_id):
+            name = db.get_data(get_name_product=1, field1='name', operand1=entry[3])[0]
+            text += f'<b>{i}.</b> <b>Название</b> {name}; <b>Кол.</b> {entry[4]}; <b>Стоимость</b> {entry[5]}₸.' + '\n'
+            total_cost += entry[5] * entry[4]
+            i += 1
+        text += f'<b>К оплате:</b> {total_cost}₸'
+        order_item_ikm = InlineKeyboardMarkup(row_width=1)
+        if order[0][2] == 0:
+            order_item_ikm.add(InlineKeyboardButton(text='Оплатить', callback_data=cb.new(id=order_id, action='to_pay')))
+        else:
+            order_item_ikm.add(InlineKeyboardButton(text='Оплачен', callback_data=cb.new(id=-2, action='paid_for')))
+            if order[0][3] == 0:
+                order_item_ikm.add(InlineKeyboardButton(text='Не доставлен', callback_data=cb.new(id=-3, action='not_delivered')))
+            else:
+                order_item_ikm.add(InlineKeyboardButton(text='Доставлен', callback_data=cb.new(id=-3, action='delivered')))
+        order_item_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+        return text, order_item_ikm

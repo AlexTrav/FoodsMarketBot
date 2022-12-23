@@ -185,6 +185,43 @@ async def get_user_orders_callback_query(callback: types.CallbackQuery):
     await callback.answer()
 
 
+@dp.callback_query_handler(CallbackData('orders', 'id', 'action').filter(), state=UserStatesGroup.my_orders)
+async def open_order_callback(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await UserStatesGroup.start.set()
+        await callback.message.edit_text(text='Добро пожаловать в FoodsMarket!',
+                                         reply_markup=Keyboards.get_start_ikm())
+    else:
+        if callback_data['action'] == 'order_item':
+            await UserStatesGroup.order_item.set()
+            text, keyboard = Keyboards.get_order_item(order_id=int(callback_data['id']))
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard,
+                                             parse_mode='HTML')
+        if callback_data['action'] == 'is_paid':
+            await callback.answer('Оплачен ли заказ')
+        if callback_data['action'] == 'is_delivered':
+            await callback.answer('Доставлен ли заказ')
+
+
+@dp.callback_query_handler(CallbackData('order_item', 'id', 'action').filter(), state=UserStatesGroup.order_item)
+async def order_payment(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await UserStatesGroup.my_orders.set()
+        await callback.message.edit_text(text='Мои заказы:',
+                                         reply_markup=Keyboards.get_orders(callback.from_user.id))
+        await callback.answer()
+    else:
+        if callback_data['action'] == 'to_pay':
+            pass
+        if callback_data['action'] == 'paid_for':
+            await callback.answer('Заказ уже оплачен')
+        if callback_data['action'] == 'not_delivered':
+            await callback.answer('Заказ ещё не доставлен')
+        if callback_data['action'] == 'delivered':
+            await callback.answer('Заказ уже доставлен')
+
+
 def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(product_catalog_callback_query)
     dispatcher.register_callback_query_handler(product_subcatalog_callback_query)
@@ -194,3 +231,4 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(get_user_basket_callback_query)
     dispatcher.register_callback_query_handler(place_an_order_callback_query)
     dispatcher.register_callback_query_handler(edit_basket_callback_query)
+    dispatcher.register_callback_query_handler(open_order_callback)
