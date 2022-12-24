@@ -43,6 +43,9 @@ class DataBase:
     def check_user(self, **kwargs):
         self.cursor.execute('SELECT * FROM users')
         users = self.cursor.fetchall()
+        if not users:
+            self.cursor.execute(f'INSERT INTO users(id) VALUES ({kwargs["user_id"]})')
+            self.conn.commit()
         for user in users:
             if kwargs['user_id'] not in user:
                 self.cursor.execute(f'INSERT INTO users(id) VALUES ({kwargs["user_id"]})')
@@ -63,6 +66,10 @@ class DataBase:
 
     def update_address(self, **kwargs):
         self.cursor.execute(f'UPDATE users SET address = "{kwargs["address"]}" WHERE id = {kwargs["user_id"]}')
+        self.conn.commit()
+
+    def update_phone(self, **kwargs):
+        self.cursor.execute(f'UPDATE users SET phone_number = "{kwargs["phone"]}" WHERE id = {kwargs["user_id"]}')
         self.conn.commit()
 
     def working_with_basket(self, **kwargs):
@@ -97,6 +104,8 @@ class DataBase:
             self.cursor.execute(f'UPDATE orders SET total_cost = {kwargs["total_cost"]} WHERE id = {kwargs["order_id"]} AND user_id = {kwargs["user_id"]}')
         if 'insert_in_order_items' in kwargs:
             self.cursor.execute(f'INSERT INTO order_items(order_id, user_id, product_id, `count`, cost) VALUES ({kwargs["order_id"]}, {kwargs["user_id"]}, {kwargs["product_id"]}, {kwargs["count"]}, {kwargs["cost"]})')
+        if 'insert_in_delivery' in kwargs:
+            self.cursor.execute(f'INSERT INTO delivery(order_id) VALUES ({kwargs["order_id"]})')
         if 'clear_basket' in kwargs:
             self.cursor.execute(f'DELETE FROM basket WHERE user_id = {kwargs["user_id"]}')
         self.conn.commit()

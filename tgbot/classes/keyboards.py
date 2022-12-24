@@ -13,6 +13,7 @@ class Keyboards:
             [InlineKeyboardButton(text='Моя корзина', callback_data='my_basket')],
             [InlineKeyboardButton(text='Мои заказы', callback_data='my_orders')],
             [InlineKeyboardButton(text='Глобальный поиск', callback_data='search')],
+            [InlineKeyboardButton(text='Профиль', callback_data='profile')],
             [InlineKeyboardButton(text='Работа', callback_data='work')]
         ])
         return start_ikm
@@ -27,14 +28,11 @@ class Keyboards:
         return text, keyboard
 
     @staticmethod
-    def add_balance_user(user_id: int) -> tuple:
+    def add_balance_user(user_id: int) -> str:
         db.check_user(user_id=user_id)
         db.add_balance(user_id=user_id)
         text = f"Ваш баланс пополнен на 10000₸"
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text='Понятно', callback_data='delete_balance_message')]
-        ])
-        return text, keyboard
+        return text
 
     @staticmethod
     def set_address_user(**kwargs) -> tuple:
@@ -44,13 +42,21 @@ class Keyboards:
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text='Понятно', callback_data='delete_balance_message')]
             ])
+            return text, keyboard
         else:
             db.update_address(user_id=kwargs['user_id'], address=kwargs['address'])
-            text = f"Адрес: {kwargs['address']} утвреждён"
+
+    @staticmethod
+    def set_phone_user(**kwargs) -> tuple:
+        db.check_user(user_id=kwargs['user_id'])
+        if kwargs['pos'] == 0:
+            text = f'Укажите актуальный номер мобильного телефона:'
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text='Понятно', callback_data='delete_balance_message')]
             ])
-        return text, keyboard
+            return text, keyboard
+        else:
+            db.update_phone(user_id=kwargs['user_id'], phone=kwargs['phone'])
 
     @staticmethod
     def get_product_catalog() -> InlineKeyboardMarkup:
@@ -226,3 +232,25 @@ class Keyboards:
         for entry in db.get_data(table='order_items', where=1, operand1='order_id', operand2=order_id):
             total_cost += entry[5] * entry[4]
         return total_cost
+
+    @staticmethod
+    def get_profile(user_id: int) -> tuple:
+        cb = CallbackData('user_profile', 'action')
+        user = db.get_data(table='users', where=1, operand1='id', operand2=user_id)[0]
+        my_profile_ikm = InlineKeyboardMarkup(row_width=1)
+        text = f'<b>Ваш баланс</b>: {user[1]}' + '\n'
+        my_profile_ikm.add(InlineKeyboardButton(text='Пополнить баланс', callback_data=cb.new(action='add_balance')))
+        if user[2] is None:
+            text += f'<b>Ваш адрес</b>: Не указан' + '\n'
+            my_profile_ikm.add(InlineKeyboardButton(text='Указать адрес', callback_data=cb.new(action='set_address')))
+        else:
+            text += f'<b>Ваш адрес</b>: {user[2]}' + '\n'
+            my_profile_ikm.add(InlineKeyboardButton(text='Изменить адрес', callback_data=cb.new(action='update_address')))
+        if user[3] is None:
+            text += f'<b>Ваш телефон</b>: Не указан' + '\n'
+            my_profile_ikm.add(InlineKeyboardButton(text='Указать телефон', callback_data=cb.new(action='set_phone')))
+        else:
+            text += f'<b>Ваш телефон</b>: {user[3]}' + '\n'
+            my_profile_ikm.add(InlineKeyboardButton(text='Изменить телефон', callback_data=cb.new(action='update_phone')))
+        my_profile_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back')))
+        return text, my_profile_ikm

@@ -14,4 +14,6 @@ class UserStatesGroup(StatesGroup):
     my_orders = State()
     order_item = State()
     add_address = State()
+    my_profile = State()
+    add_phone = State()
     end = State()

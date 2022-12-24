@@ -13,7 +13,7 @@ from tgbot.db.database import db
 
 @dp.callback_query_handler(text='delete_balance_message', state='*')
 async def my_balance_callback_query(callback: types.CallbackQuery):
-    await UserStatesGroup.start.set()
+    await UserStatesGroup.my_profile.set()
     await callback.answer('Сообщение удалено')
     await callback.message.delete()
 
@@ -193,7 +193,7 @@ async def get_user_orders_callback_query(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(CallbackData('orders', 'id', 'action').filter(), state=UserStatesGroup.my_orders)
-async def open_order_callback(callback: types.CallbackQuery, callback_data: dict):
+async def open_order_callback_query(callback: types.CallbackQuery, callback_data: dict):
     if callback_data['action'] == 'back':
         await UserStatesGroup.start.set()
         await callback.message.edit_text(text='Добро пожаловать в FoodsMarket!',
@@ -212,7 +212,7 @@ async def open_order_callback(callback: types.CallbackQuery, callback_data: dict
 
 
 @dp.callback_query_handler(CallbackData('order_item', 'id', 'action').filter(), state=UserStatesGroup.order_item)
-async def order_payment(callback: types.CallbackQuery, callback_data: dict):
+async def order_payment_callback_query(callback: types.CallbackQuery, callback_data: dict):
     if callback_data['action'] == 'back':
         await UserStatesGroup.my_orders.set()
         await callback.message.edit_text(text='Мои заказы:',
@@ -223,6 +223,7 @@ async def order_payment(callback: types.CallbackQuery, callback_data: dict):
             if db.check_enough_money(user_id=callback.from_user.id, sum=Keyboards.get_total_cost(order_id=callback_data['id'])):
                 if db.check_address(user_id=callback.from_user.id):
                     db.order_payment(user_id=callback.from_user.id, order_id=callback_data['id'], sum=Keyboards.get_total_cost(order_id=callback_data['id']))
+                    db.working_with_place_an_order(insert_in_delivery=1, order_id=callback_data['id'])
                     text, keyboard = Keyboards.get_order_item(order_id=callback_data['id'])
                     await callback.message.edit_text(text=text,
                                                      reply_markup=keyboard,
@@ -240,6 +241,45 @@ async def order_payment(callback: types.CallbackQuery, callback_data: dict):
             await callback.answer('Заказ уже доставлен')
 
 
+@dp.callback_query_handler(text='profile',  state='*')
+async def get_user_profile_callback_query(callback: types.CallbackQuery):
+    await UserStatesGroup.my_profile.set()
+    text, keyboard = Keyboards.get_profile(callback.from_user.id)
+    await callback.message.edit_text(text=text,
+                                     reply_markup=keyboard,
+                                     parse_mode='HTML')
+    await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('user_profile', 'action').filter(),  state=UserStatesGroup.my_profile)
+async def user_profile_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await UserStatesGroup.start.set()
+        await callback.message.edit_text(text='Добро пожаловать в FoodsMarket!',
+                                         reply_markup=Keyboards.get_start_ikm())
+    else:
+        if callback_data['action'] == 'add_balance':
+            answer = Keyboards.add_balance_user(user_id=callback.from_user.id)
+            await callback.answer(answer)
+            text, keyboard = Keyboards.get_profile(user_id=callback.from_user.id)
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard,
+                                             parse_mode='HTML')
+        if callback_data['action'] == 'set_address' or callback_data['action'] == 'update_address':
+            await callback.message.delete()
+            await UserStatesGroup.add_address.set()
+            text, keyboard = Keyboards.set_address_user(user_id=callback.from_user.id, pos=0)
+            await callback.message.answer(text=text,
+                                          reply_markup=keyboard)
+        if callback_data['action'] == 'set_phone' or callback_data['action'] == 'update_phone':
+            await callback.message.delete()
+            await UserStatesGroup.add_phone.set()
+            text, keyboard = Keyboards.set_phone_user(user_id=callback.from_user.id, pos=0)
+            await callback.message.answer(text=text,
+                                          reply_markup=keyboard)
+    await callback.answer()
+
+
 def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(product_catalog_callback_query)
     dispatcher.register_callback_query_handler(product_subcatalog_callback_query)
@@ -249,4 +289,6 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(get_user_basket_callback_query)
     dispatcher.register_callback_query_handler(place_an_order_callback_query)
     dispatcher.register_callback_query_handler(edit_basket_callback_query)
-    dispatcher.register_callback_query_handler(open_order_callback)
+    dispatcher.register_callback_query_handler(open_order_callback_query)
+    dispatcher.register_callback_query_handler(get_user_profile_callback_query)
+    dispatcher.register_callback_query_handler(user_profile_callback_query)
