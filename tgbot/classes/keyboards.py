@@ -20,10 +20,12 @@ class Keyboards:
 
     @staticmethod
     def get_balance_user(user_id: int) -> tuple:
+        cb = CallbackData('del_message', 'action')
         db.check_user(user_id=user_id)
         text = f"Ваш баланс: {db.get_data(table='users', where=1, operand1='id', operand2=user_id)[0][1]}₸"
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text='Понятно', callback_data='delete_balance_message')]
+            [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))],
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
         ])
         return text, keyboard
 
@@ -37,10 +39,12 @@ class Keyboards:
     @staticmethod
     def set_address_user(**kwargs) -> tuple:
         db.check_user(user_id=kwargs['user_id'])
+        cb = CallbackData('del_message', 'action')
         if kwargs['pos'] == 0:
             text = f'Укажите актуальный адрес доставки следуюищим сообщением:'
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text='Понятно', callback_data='delete_balance_message')]
+                [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))],
+                [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
             ])
             return text, keyboard
         else:
@@ -49,10 +53,12 @@ class Keyboards:
     @staticmethod
     def set_phone_user(**kwargs) -> tuple:
         db.check_user(user_id=kwargs['user_id'])
+        cb = CallbackData('del_message', 'action')
         if kwargs['pos'] == 0:
             text = f'Укажите актуальный номер мобильного телефона:'
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text='Понятно', callback_data='delete_balance_message')]
+                [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))],
+                [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
             ])
             return text, keyboard
         else:

@@ -11,11 +11,18 @@ from tgbot.classes.keyboards import Keyboards
 from tgbot.db.database import db
 
 
-@dp.callback_query_handler(text='delete_balance_message', state='*')
-async def my_balance_callback_query(callback: types.CallbackQuery):
-    await UserStatesGroup.my_profile.set()
-    await callback.answer('Сообщение удалено')
-    await callback.message.delete()
+@dp.callback_query_handler(CallbackData('del_message', 'action').filter(), state='*')
+async def my_balance_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await UserStatesGroup.my_profile.set()
+        text, keyboard = Keyboards.get_profile(callback.from_user.id)
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard,
+                                         parse_mode='HTML')
+    else:
+        await callback.answer('Сообщение удалено')
+        await callback.message.delete()
+    await callback.answer()
 
 
 @dp.callback_query_handler(text='product_catalog', state='*')
