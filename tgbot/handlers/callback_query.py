@@ -5,11 +5,21 @@ from aiogram.utils.callback_data import CallbackData
 
 from tgbot.loader import dp
 
-from tgbot.classes.states import UserStatesGroup
+from tgbot.classes.states import UserStatesGroup, CourierStatesGroup  # , OperatorStatesGroup, AdminStatesGroup
 from tgbot.classes.keyboards import Keyboards
 
 from tgbot.db.database import db
 
+
+@dp.callback_query_handler(text='exit', state='*')
+async def exit_callback_query(callback: types.CallbackQuery, state: FSMContext):
+    await state.finish()
+    db.exit_role(user_id=callback.from_user.id)
+    await callback.answer('Вы успешно вышли!')
+    await callback.message.delete()
+
+
+#######################################################################USER#########################################################################################
 
 @dp.callback_query_handler(CallbackData('del_message', 'action').filter(), state='*')
 async def my_balance_callback_query(callback: types.CallbackQuery, callback_data: dict):
@@ -48,7 +58,8 @@ async def product_subcatalog_callback_query(callback: types.CallbackQuery, callb
     await callback.answer()
 
 
-@dp.callback_query_handler(CallbackData('subcategories', 'id', 'action').filter(), state=UserStatesGroup.product_subcatalog)
+@dp.callback_query_handler(CallbackData('subcategories', 'id', 'action').filter(),
+                           state=UserStatesGroup.product_subcatalog)
 async def products_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
         await UserStatesGroup.product_catalog.set()
@@ -69,7 +80,8 @@ async def product_callback_query(callback: types.CallbackQuery, callback_data: d
         await UserStatesGroup.product_subcatalog.set()
         async with state.proxy() as data:
             await callback.message.edit_text(text='Выберите подкатегорию продуктов:',
-                                             reply_markup=Keyboards.get_product_subcatalog(category_id=data['product_catalog']))
+                                             reply_markup=Keyboards.get_product_subcatalog(
+                                                 category_id=data['product_catalog']))
     else:
         async with state.proxy() as data:
             data['edit_basket'] = ''
@@ -82,14 +94,16 @@ async def product_callback_query(callback: types.CallbackQuery, callback_data: d
     await callback.answer()
 
 
-@dp.callback_query_handler(CallbackData('product', 'id', 'action').filter(), state=[UserStatesGroup.product, UserStatesGroup.adding_to_basket])
+@dp.callback_query_handler(CallbackData('product', 'id', 'action').filter(),
+                           state=[UserStatesGroup.product, UserStatesGroup.adding_to_basket])
 async def add_product_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     async with state.proxy() as data:
         if data['edit_basket'] == -2:
             answer, is_delete = db.working_with_basket(state=callback_data['action'], user_id=callback.from_user.id,
                                                        product_id=callback_data['id'])
             if callback_data['action'] == 'add_basket_count' or callback_data['action'] == 'dec_basket_count' and is_delete:
-                text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'], user_id=callback.from_user.id, back_id=-2)
+                text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'],
+                                                              user_id=callback.from_user.id, back_id=-2)
                 await callback.message.edit_media(InputMedia(media=photo, caption=text), reply_markup=keyboard)
             await callback.answer(text=answer)
             if callback_data['action'] == 'back':
@@ -104,7 +118,8 @@ async def add_product_callback_query(callback: types.CallbackQuery, callback_dat
             if callback_data['id'] == '-1':
                 await UserStatesGroup.products.set()
                 await callback.message.answer(text='Выберите продукт:',
-                                              reply_markup=Keyboards.get_products(subcategory_id=data['product_subcatalog']))
+                                              reply_markup=Keyboards.get_products(
+                                                  subcategory_id=data['product_subcatalog']))
             else:
                 await UserStatesGroup.edit_basket.set()
                 text, keyboard = Keyboards.get_edit_basket(user_id=callback.from_user.id)
@@ -116,12 +131,13 @@ async def add_product_callback_query(callback: types.CallbackQuery, callback_dat
                                                        product_id=callback_data['id'])
             await UserStatesGroup.adding_to_basket.set()
             if callback_data['action'] == 'add_basket_count' or callback_data['action'] == 'dec_basket_count' and is_delete:
-                text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'], user_id=callback.from_user.id)
+                text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'],
+                                                              user_id=callback.from_user.id)
                 await callback.message.edit_media(InputMedia(media=photo, caption=text), reply_markup=keyboard)
             await callback.answer(text=answer)
 
 
-@dp.callback_query_handler(text='my_basket',  state='*')
+@dp.callback_query_handler(text='my_basket', state='*')
 async def get_user_basket_callback_query(callback: types.CallbackQuery):
     await UserStatesGroup.my_basket.set()
     text, keyboard = Keyboards.get_basket(callback.from_user.id)
@@ -169,18 +185,21 @@ async def edit_basket_callback_query(callback: types.CallbackQuery, callback_dat
             prev_state = await state.get_state()
             await callback.message.delete()
             await UserStatesGroup.product.set()
-            text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'], user_id=callback.from_user.id, states_previous=prev_state)
+            text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'], user_id=callback.from_user.id,
+                                                          states_previous=prev_state)
             await callback.message.answer_photo(photo=photo,
                                                 caption=text,
                                                 reply_markup=keyboard)
         elif callback_data['action'] == 'dec':
-            answer, is_delete = db.working_with_basket(state='dec_basket_count', user_id=callback.from_user.id, product_id=callback_data['id'])
+            answer, is_delete = db.working_with_basket(state='dec_basket_count', user_id=callback.from_user.id,
+                                                       product_id=callback_data['id'])
             text, keyboard = Keyboards.get_edit_basket(user_id=callback.from_user.id)
             await callback.message.edit_text(text=text,
                                              reply_markup=keyboard)
             await callback.answer(text=answer)
         elif callback_data['action'] == 'inc':
-            answer, is_delete = db.working_with_basket(state='inc_basket_count', user_id=callback.from_user.id, product_id=callback_data['id'])
+            answer, is_delete = db.working_with_basket(state='inc_basket_count', user_id=callback.from_user.id,
+                                                       product_id=callback_data['id'])
             text, keyboard = Keyboards.get_edit_basket(user_id=callback.from_user.id)
             await callback.message.edit_text(text=text,
                                              reply_markup=keyboard)
@@ -191,7 +210,7 @@ async def edit_basket_callback_query(callback: types.CallbackQuery, callback_dat
     await callback.answer()
 
 
-@dp.callback_query_handler(text='my_orders',  state='*')
+@dp.callback_query_handler(text='my_orders', state='*')
 async def get_user_orders_callback_query(callback: types.CallbackQuery):
     await UserStatesGroup.my_orders.set()
     await callback.message.edit_text(text='Мои заказы:',
@@ -227,9 +246,11 @@ async def order_payment_callback_query(callback: types.CallbackQuery, callback_d
         await callback.answer()
     else:
         if callback_data['action'] == 'to_pay':
-            if db.check_enough_money(user_id=callback.from_user.id, sum=Keyboards.get_total_cost(order_id=callback_data['id'])):
+            if db.check_enough_money(user_id=callback.from_user.id,
+                                     sum=Keyboards.get_total_cost(order_id=callback_data['id'])):
                 if db.check_address(user_id=callback.from_user.id):
-                    db.order_payment(user_id=callback.from_user.id, order_id=callback_data['id'], sum=Keyboards.get_total_cost(order_id=callback_data['id']))
+                    db.order_payment(user_id=callback.from_user.id, order_id=callback_data['id'],
+                                     sum=Keyboards.get_total_cost(order_id=callback_data['id']))
                     db.working_with_place_an_order(insert_in_delivery=1, order_id=callback_data['id'])
                     text, keyboard = Keyboards.get_order_item(order_id=callback_data['id'])
                     await callback.message.edit_text(text=text,
@@ -248,7 +269,7 @@ async def order_payment_callback_query(callback: types.CallbackQuery, callback_d
             await callback.answer('Заказ уже доставлен')
 
 
-@dp.callback_query_handler(text='profile',  state='*')
+@dp.callback_query_handler(text='profile', state='*')
 async def get_user_profile_callback_query(callback: types.CallbackQuery):
     await UserStatesGroup.my_profile.set()
     text, keyboard = Keyboards.get_profile(callback.from_user.id)
@@ -258,7 +279,7 @@ async def get_user_profile_callback_query(callback: types.CallbackQuery):
     await callback.answer()
 
 
-@dp.callback_query_handler(CallbackData('user_profile', 'action').filter(),  state=UserStatesGroup.my_profile)
+@dp.callback_query_handler(CallbackData('user_profile', 'action').filter(), state=UserStatesGroup.my_profile)
 async def user_profile_callback_query(callback: types.CallbackQuery, callback_data: dict):
     if callback_data['action'] == 'back':
         await UserStatesGroup.start.set()
@@ -287,7 +308,94 @@ async def user_profile_callback_query(callback: types.CallbackQuery, callback_da
     await callback.answer()
 
 
+@dp.callback_query_handler(text='work', state='*')
+async def get_work_callback_query(callback: types.CallbackQuery):
+    await UserStatesGroup.work.set()
+    text, keyboard = Keyboards.get_work()
+    await callback.message.edit_text(text=text,
+                                     reply_markup=keyboard)
+    await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('work', 'action').filter(), state=UserStatesGroup.work)
+async def working_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await UserStatesGroup.start.set()
+        await callback.message.edit_text(text='Добро пожаловать в FoodsMarket!',
+                                         reply_markup=Keyboards.get_start_ikm())
+    else:
+        if callback_data['action'] == 'admin':
+            answer = db.check_role(user_id=callback.from_user.id, role_id=4)
+            await callback.answer(answer)
+            if answer != 'Вас нету в списке работников!':
+                await callback.message.delete()
+        if callback_data['action'] == 'operator':
+            answer = db.check_role(user_id=callback.from_user.id, role_id=2)
+            await callback.answer(answer)
+            if answer != 'Вас нету в списке работников!':
+                await callback.message.delete()
+        if callback_data['action'] == 'courier':
+            answer = db.check_role(user_id=callback.from_user.id, role_id=3)
+            await callback.answer(answer)
+            if answer != 'Вас нету в списке работников!':
+                await callback.message.delete()
+    await callback.answer()
+
+
+#######################################################################ADMIN#######################################################################################
+
+
+#######################################################################OPERATOR####################################################################################
+
+
+#######################################################################COURIER#####################################################################################
+
+@dp.callback_query_handler(text='orders', state=CourierStatesGroup.start)
+async def undelivered_orders_callback_query(callback: types.CallbackQuery):
+    await CourierStatesGroup.orders.set()
+    text, keyboard = Keyboards.get_undelivered_orders()
+    await callback.message.edit_text(text=text,
+                                     reply_markup=keyboard)
+    await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('delivery', 'id', 'action').filter(), state=CourierStatesGroup.orders)
+async def delivery_orders_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await CourierStatesGroup.start.set()
+        await callback.message.edit_text(text='Курьер! Добро пожаловать в FoodsMarket!',
+                                         reply_markup=Keyboards.get_start_courier())
+    else:
+        await CourierStatesGroup.order_item.set()
+        text, keyboard = Keyboards.get_order_item_courier(order_id=callback_data['id'])
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard,
+                                         parse_mode='HTML')
+        await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('order_item', 'id', 'action').filter(), state=CourierStatesGroup.order_item)
+async def delivered_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await CourierStatesGroup.orders.set()
+        text, keyboard = Keyboards.get_undelivered_orders()
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+        await callback.answer()
+    else:
+        db.delivered_order(user_id=callback.from_user.id, order_id=callback_data['id'])
+        await CourierStatesGroup.orders.set()
+        text, keyboard = Keyboards.get_undelivered_orders()
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+        await callback.answer('Заказ успешно выполнен!')
+
+
+###################################################################REGISTER_HANDLERS##################################################################################
+
 def register_handlers(dispatcher: Dispatcher):
+    dispatcher.register_callback_query_handler(exit_callback_query)
+    ###################################USER###################################
     dispatcher.register_callback_query_handler(product_catalog_callback_query)
     dispatcher.register_callback_query_handler(product_subcatalog_callback_query)
     dispatcher.register_callback_query_handler(products_callback_query)
@@ -299,3 +407,14 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(open_order_callback_query)
     dispatcher.register_callback_query_handler(get_user_profile_callback_query)
     dispatcher.register_callback_query_handler(user_profile_callback_query)
+    dispatcher.register_callback_query_handler(get_work_callback_query)
+    dispatcher.register_callback_query_handler(working_callback_query)
+    ##################################ADMIN###################################
+
+    ##################################OPERATOR################################
+
+    ##################################COURIER#################################
+    dispatcher.register_callback_query_handler(undelivered_orders_callback_query)
+    dispatcher.register_callback_query_handler(delivery_orders_callback_query)
+    dispatcher.register_callback_query_handler(delivered_callback_query)
+

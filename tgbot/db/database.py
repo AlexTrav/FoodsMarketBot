@@ -40,6 +40,9 @@ class DataBase:
             self.cursor.execute(f"SELECT * FROM {kwargs['table']}")
         return self.cursor.fetchall()
 
+
+#######################################################################USER#########################################################################################
+
     def check_user(self, **kwargs):
         self.cursor.execute('SELECT * FROM users')
         users = self.cursor.fetchall()
@@ -50,6 +53,21 @@ class DataBase:
             if kwargs['user_id'] not in user:
                 self.cursor.execute(f'INSERT INTO users(id) VALUES ({kwargs["user_id"]})')
                 self.conn.commit()
+
+    def check_role(self, **kwargs):
+        self.cursor.execute(f'SELECT * FROM workers WHERE id = {kwargs["user_id"]} AND role_id = {kwargs["role_id"]}')
+        workers = self.cursor.fetchall()
+        if workers:
+            self.cursor.execute(f'UPDATE users SET role_id = {kwargs["role_id"]} WHERE id = {kwargs["user_id"]}')
+            self.conn.commit()
+            if kwargs['role_id'] == 2:
+                return 'Вы вошли как оператор'
+            if kwargs['role_id'] == 3:
+                return 'Вы вошли как курьер'
+            if kwargs['role_id'] == 4:
+                return 'Вы вошли как админ'
+        else:
+            return 'Вас нету в списке работников!'
 
     def add_balance(self, **kwargs):
         self.cursor.execute(f'UPDATE users SET balance = balance + 10000 WHERE id = {kwargs["user_id"]}')
@@ -115,5 +133,31 @@ class DataBase:
         self.cursor.execute(f'UPDATE orders SET is_paid = 1 WHERE id = {kwargs["order_id"]}')
         self.conn.commit()
 
+    def get_role_id(self, **kwargs):
+        self.cursor.execute(f'SELECT role_id FROM users WHERE id = {kwargs["user_id"]}')
+        role_id = self.cursor.fetchall()[0][0]
+        return role_id
+
+    def exit_role(self, **kwargs):
+        self.cursor.execute(f'UPDATE users SET role_id = 1 WHERE id = {kwargs["user_id"]}')
+        self.conn.commit()
+
+
+#######################################################################ADMIN#######################################################################################
+
+
+#######################################################################OPERATOR####################################################################################
+
+
+#######################################################################COURIER#####################################################################################
+
+    def delivered_order(self, **kwargs):
+        self.cursor.execute(f'UPDATE delivery SET worker_id = {kwargs["user_id"]}, is_completed = 1 WHERE order_id = {kwargs["order_id"]}')
+        self.conn.commit()
+        self.cursor.execute(f'UPDATE orders SET is_delivered = 1 WHERE id = {kwargs["order_id"]}')
+        self.conn.commit()
+
+
+#######################################################################DB-OBJECT###################################################################################
 
 db = DataBase()

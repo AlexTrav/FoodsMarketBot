@@ -14,6 +14,20 @@ class UserStatesGroup(StatesGroup):
     my_orders = State()
     order_item = State()
     add_address = State()
+    work = State()
     my_profile = State()
     add_phone = State()
-    end = State()
+
+
+class OperatorStatesGroup(StatesGroup):
+    start = State()
+
+
+class CourierStatesGroup(StatesGroup):
+    start = State()
+    orders = State()
+    order_item = State()
+
+
+class AdminStatesGroup(StatesGroup):
+    start = State()

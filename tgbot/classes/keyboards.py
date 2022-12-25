@@ -6,6 +6,9 @@ from tgbot.db.database import db
 
 class Keyboards:
 
+
+#######################################################################USER#########################################################################################
+
     @staticmethod
     def get_start_ikm() -> InlineKeyboardMarkup:
         start_ikm = InlineKeyboardMarkup(inline_keyboard=[
@@ -189,23 +192,25 @@ class Keyboards:
 
     @staticmethod
     def get_orders(user_id: int) -> InlineKeyboardMarkup:
-        cb = CallbackData('orders', 'id', 'action')
-        orders_ikm = InlineKeyboardMarkup(row_width=3)
-        buttons = []
-        for entry in db.get_data(table='orders', where=1, operand1='user_id', operand2=user_id):
-            res_date = str(entry[2])[6:8] + '.' + str(entry[2])[4:6] + ' ' + str(entry[2])[8:10] + ':' + str(entry[2])[10:12]
-            buttons.append(InlineKeyboardButton(text=f'{res_date}', callback_data=cb.new(id=entry[0], action='order_item')))
-            if entry[3] == 0:
-                buttons.append(InlineKeyboardButton(text='Не оплачен', callback_data=cb.new(id=-2, action='is_paid')))
-            else:
-                buttons.append(InlineKeyboardButton(text='Оплачен', callback_data=cb.new(id=-2, action='is_paid')))
-            if entry[4] == 0:
-                buttons.append(InlineKeyboardButton(text='Не доставлен', callback_data=cb.new(id=-2, action='is_delivered')))
-            else:
-                buttons.append(InlineKeyboardButton(text='Доставлен', callback_data=cb.new(id=-2, action='is_delivered')))
-        buttons.append(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
-        orders_ikm.add(*buttons)
-        return orders_ikm
+        orders = db.get_data(table='orders', where=1, operand1='user_id', operand2=user_id)
+        if len(orders) <= 33:
+            cb = CallbackData('orders', 'id', 'action')
+            orders_ikm = InlineKeyboardMarkup(row_width=3)
+            buttons = []
+            for entry in orders:
+                res_date = str(entry[2])[6:8] + '.' + str(entry[2])[4:6] + ' ' + str(entry[2])[8:10] + ':' + str(entry[2])[10:12]
+                buttons.append(InlineKeyboardButton(text=f'{res_date}', callback_data=cb.new(id=entry[0], action='order_item')))
+                if entry[3] == 0:
+                    buttons.append(InlineKeyboardButton(text='Не оплачен', callback_data=cb.new(id=-2, action='is_paid')))
+                else:
+                    buttons.append(InlineKeyboardButton(text='Оплачен', callback_data=cb.new(id=-2, action='is_paid')))
+                if entry[4] == 0:
+                    buttons.append(InlineKeyboardButton(text='Не доставлен', callback_data=cb.new(id=-2, action='is_delivered')))
+                else:
+                    buttons.append(InlineKeyboardButton(text='Доставлен', callback_data=cb.new(id=-2, action='is_delivered')))
+            buttons.append(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+            orders_ikm.add(*buttons)
+            return orders_ikm
 
     @staticmethod
     def get_order_item(order_id: int) -> tuple:
@@ -260,3 +265,69 @@ class Keyboards:
             my_profile_ikm.add(InlineKeyboardButton(text='Изменить телефон', callback_data=cb.new(action='update_phone')))
         my_profile_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back')))
         return text, my_profile_ikm
+
+    @staticmethod
+    def get_work() -> tuple:
+        cb = CallbackData('work', 'action')
+        text = 'Добро пожаловать в модуль работы!' + '\n'
+        text += 'Выберите одно из предложенных действий'
+        work_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='Войти как админ', callback_data=cb.new(action='admin'))],
+            [InlineKeyboardButton(text='Войти как оператор', callback_data=cb.new(action='operator'))],
+            [InlineKeyboardButton(text='Войти как курьер', callback_data=cb.new(action='courier'))],
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
+        ])
+        return text, work_ikm
+
+
+#######################################################################ADMIN#######################################################################################
+
+
+#######################################################################OPERATOR####################################################################################
+
+
+#######################################################################COURIER#####################################################################################
+
+    @staticmethod
+    def get_start_courier() -> InlineKeyboardMarkup:
+        start_courier_ikm = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text='Заказы', callback_data='orders')],
+            [InlineKeyboardButton(text='Выйти', callback_data='exit')]
+        ])
+        return start_courier_ikm
+
+    @staticmethod
+    def get_undelivered_orders() -> tuple:
+        cb = CallbackData('delivery', 'id', 'action')
+        text = 'Недоставленные заказы:'
+        delivery_ikm = InlineKeyboardMarkup(row_width=1)
+        buttons = []
+        for entry in db.get_data(table='delivery', where=1, operand1='is_completed', operand2=0):
+            order = db.get_data(table='orders', where=1, operand1='id', operand2=entry[1])[0]
+            res_date = str(order[2])[6:8] + '.' + str(order[2])[4:6] + ' ' + str(order[2])[8:10] + ':' + str(order[2])[10:12]
+            buttons.append(InlineKeyboardButton(text=f'{res_date}', callback_data=cb.new(id=entry[1], action='order_item')))
+        buttons.append(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+        delivery_ikm.add(*buttons)
+        return text, delivery_ikm
+
+    @staticmethod
+    def get_order_item_courier(order_id: int) -> tuple:
+        cb = CallbackData('order_item', 'id', 'action')
+        order = db.get_data(table='orders', where=1, operand1='id', operand2=order_id)[0]
+        user = db.get_data(table='users', where=1, operand1='id', operand2=order[1])[0]
+        text = f'<b>Заказ под номером</b> {order_id}, <b>для пользователя</b>: {order[1]}.' + '\n'
+        text += f'<b>Состовляющие заказа:</b>' + '\n'
+        i = 1
+        for entry in db.get_data(table='order_items', where=1, operand1='order_id', operand2=order_id):
+            name = db.get_data(get_name_product=1, field1='name', operand1=entry[3])[0]
+            text += f'<b>{i}.</b> <b>Название</b> {name}; <b>Кол.</b> {entry[4]}; <b>Стоимость</b> {entry[5]}₸.' + '\n'
+            i += 1
+        text += f'<b>Сумма заказа:</b> {order[5]}₸.' + '\n'
+        text += '<b>Состовляющие пользователя:</b>' + '\n'
+        text += f'<b>Адрес доставки:</b> {user[2]}.' + '\n'
+        text += f'<b>Номер телефона:</b> {user[3]}.'
+        delivery_order_item_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='Доставил', callback_data=cb.new(id=order[0], action='delivered'))],
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
+        ])
+        return text, delivery_order_item_ikm

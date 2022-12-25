@@ -8,6 +8,8 @@ from tgbot.classes.keyboards import Keyboards
 from aiogram.dispatcher import FSMContext
 
 
+#######################################################################USER#########################################################################################
+
 @dp.message_handler(content_types=['text'], state=UserStatesGroup.add_address)
 async def set_address_message(message: types.Message, state: FSMContext) -> None:
     if await state.get_state() == 'UserStatesGroup:add_address':
@@ -31,6 +33,8 @@ async def set_phone_message(message: types.Message, state: FSMContext) -> None:
                              reply_markup=keyboard,
                              parse_mode='HTML')
 
+
+###################################################################REGISTER_HANDLERS##################################################################################
 
 def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_message_handler(set_address_message)
