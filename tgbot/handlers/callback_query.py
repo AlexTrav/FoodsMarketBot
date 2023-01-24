@@ -98,7 +98,24 @@ async def product_callback_query(callback: types.CallbackQuery, callback_data: d
                            state=[UserStatesGroup.product, UserStatesGroup.adding_to_basket])
 async def add_product_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     async with state.proxy() as data:
-        if data['edit_basket'] == -2:
+        if data['edit_basket'] == -3:
+            if callback_data['id'] == '-1':
+                await callback.message.delete()
+                text, keyboard = Keyboards.get_search_products(search_query=data['search_query'])
+                await callback.message.answer(text=text,
+                                              reply_markup=keyboard)
+                await UserStatesGroup.search.set()
+            else:
+                answer, is_delete = db.working_with_basket(state=callback_data['action'], user_id=callback.from_user.id,
+                                                           product_id=callback_data['id'])
+                await UserStatesGroup.adding_to_basket.set()
+                if callback_data['action'] == 'add_basket_count' or callback_data[
+                    'action'] == 'dec_basket_count' and is_delete:
+                    text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'],
+                                                                  user_id=callback.from_user.id)
+                    await callback.message.edit_media(InputMedia(media=photo, caption=text), reply_markup=keyboard)
+                await callback.answer(text=answer)
+        elif data['edit_basket'] == -2:
             answer, is_delete = db.working_with_basket(state=callback_data['action'], user_id=callback.from_user.id,
                                                        product_id=callback_data['id'])
             if callback_data['action'] == 'add_basket_count' or callback_data['action'] == 'dec_basket_count' and is_delete:
@@ -113,7 +130,6 @@ async def add_product_callback_query(callback: types.CallbackQuery, callback_dat
                 await callback.message.answer(text=text,
                                               reply_markup=keyboard)
                 await callback.answer()
-        elif callback_data['action'] == 'back':
             await callback.message.delete()
             if callback_data['id'] == '-1':
                 await UserStatesGroup.products.set()
@@ -134,7 +150,14 @@ async def add_product_callback_query(callback: types.CallbackQuery, callback_dat
                 text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'],
                                                               user_id=callback.from_user.id)
                 await callback.message.edit_media(InputMedia(media=photo, caption=text), reply_markup=keyboard)
+            if callback_data['id'] == '-1':
+                await callback.message.delete()
+                await UserStatesGroup.products.set()
+                await callback.message.answer(text='Выберите продукт:',
+                                              reply_markup=Keyboards.get_products(
+                                                  subcategory_id=data['product_subcatalog']))
             await callback.answer(text=answer)
+    await callback.answer()
 
 
 @dp.callback_query_handler(text='my_basket', state='*')
@@ -339,6 +362,46 @@ async def working_callback_query(callback: types.CallbackQuery, callback_data: d
             await callback.answer(answer)
             if answer != 'Вас нету в списке работников!':
                 await callback.message.delete()
+    await callback.answer()
+
+
+@dp.callback_query_handler(text='search', state='*')
+async def get_search_callback_query(callback: types.CallbackQuery):
+    await UserStatesGroup.search.set()
+    text, keyboard = Keyboards.get_search()
+    await callback.message.edit_text(text=text,
+                                     reply_markup=keyboard)
+    await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('back', 'action').filter(), state=UserStatesGroup.search)
+async def back_search_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'delete':
+        await callback.message.delete()
+    else:
+        await UserStatesGroup.start.set()
+        await callback.message.edit_text(text='Добро пожаловать в FoodsMarket!',
+                                         reply_markup=Keyboards.get_start_ikm())
+        await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('search_answer', 'id', 'action').filter(), state=UserStatesGroup.search)
+async def search_answer_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        text, keyboard = Keyboards.get_search()
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+    else:
+        if callback_data['action'] == 'search_product':
+            async with state.proxy() as data:
+                data['edit_basket'] = -3
+            await callback.message.delete()
+            await UserStatesGroup.product.set()
+
+            text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'], user_id=callback.from_user.id)
+            await callback.message.answer_photo(photo=photo,
+                                                caption=text,
+                                                reply_markup=keyboard)
     await callback.answer()
 
 

@@ -279,6 +279,36 @@ class Keyboards:
         ])
         return text, work_ikm
 
+    @staticmethod
+    def get_search() -> tuple:
+        cb = CallbackData('back', 'action')
+        text = 'Введите поисковый запрос (следующим сообщением):'
+        search_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))],
+            [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))]
+        ])
+        return text, search_ikm
+
+
+    @staticmethod
+    def get_search_products(search_query: str) -> tuple:
+        cb = CallbackData('search_answer', 'id', 'action')
+        search_products = db.get_search_answer(search_query=search_query)
+        if len(search_products) > 0:
+            text = f'Найдено {len(search_products)} записей:'
+            search_answer_ikm = InlineKeyboardMarkup(row_width=3)
+            buttons = []
+            for product in search_products:
+                if len(buttons) == 69:
+                    break
+                buttons.append(InlineKeyboardButton(text=product[2], callback_data=cb.new(id=product[0], action='search_product')))
+            search_answer_ikm.add(*buttons).add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+        else:
+            text = 'К сожалению записей не найдено'
+            search_answer_ikm = InlineKeyboardMarkup(row_width=3, inline_keyboard=[
+                [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
+            ])
+        return text, search_answer_ikm
 
 #######################################################################ADMIN#######################################################################################
 

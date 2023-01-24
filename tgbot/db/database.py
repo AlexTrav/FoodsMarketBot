@@ -142,6 +142,11 @@ class DataBase:
         self.cursor.execute(f'UPDATE users SET role_id = 1 WHERE id = {kwargs["user_id"]}')
         self.conn.commit()
 
+    def get_search_answer(self, **kwargs):
+        self.cursor.execute(f'SELECT * FROM products WHERE `name` LIKE "%{kwargs["search_query"]}%"')
+        search_answer = self.cursor.fetchall()
+        return search_answer
+
 
 #######################################################################ADMIN#######################################################################################
 

@@ -34,6 +34,16 @@ async def set_phone_message(message: types.Message, state: FSMContext) -> None:
                              parse_mode='HTML')
 
 
+@dp.message_handler(content_types=['text'], state=UserStatesGroup.search)
+async def search_results(message: types.Message, state: FSMContext) -> None:
+    await message.delete()
+    async with state.proxy() as data:
+        data['search_query'] = message.text
+    text, keyboard = Keyboards.get_search_products(search_query=message.text)
+    await message.answer(text=text,
+                         reply_markup=keyboard)
+
+
 ###################################################################REGISTER_HANDLERS##################################################################################
 
 def register_handlers(dispatcher: Dispatcher):
