@@ -95,7 +95,8 @@ class Keyboards:
         buttons = []
         for product in db.get_data(table='products'):
             if product[1] == int(subcategory_id):
-                buttons.append(InlineKeyboardButton(text=product[2], callback_data=cb.new(id=product[0], action='products')))
+                if product[8] > 0:
+                    buttons.append(InlineKeyboardButton(text=product[2], callback_data=cb.new(id=product[0], action='products')))
         products_ikm.add(*buttons).add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
         return products_ikm
 
@@ -178,12 +179,19 @@ class Keyboards:
             db.working_with_place_an_order(insert_in_orders=1, date=int_current_datetime, user_id=user_id)
             order_id = db.get_data(table='orders', where=1, operand1='reg_date', operand2=int_current_datetime)[0][0]
             total_cost = 0
+            text = ''
             for entry in db.get_data(table='basket', where=1, operand1='user_id', operand2=user_id):
-                cost = db.get_data(table='products', where=1, operand1='id', operand2=entry[2])[0][6]
+                count_stock = db.get_data(get_name_product=1, field1='count', operand1=entry[2])[0][0]
+                if entry[3] > count_stock:
+                    text = f'Количество товаров изменено! '
+                    db.update_count_basket(basket_id=entry[0], count_stock=count_stock)
+            for entry in db.get_data(table='basket', where=1, operand1='user_id', operand2=user_id):
+                name, cost = db.get_data(get_name_product=1, field1='name', field2='cost', operand1=entry[2])[0]
                 total_cost += cost * entry[3]
                 db.working_with_place_an_order(insert_in_order_items=1, order_id=order_id, user_id=user_id, product_id=entry[2], count=entry[3], cost=cost)
             db.working_with_place_an_order(insert_in_orders_total_cost=1, total_cost=total_cost, user_id=user_id, order_id=order_id)
-            text = 'Заказ успешно оформлен!' + '\n'
+            text += 'Заказ успешно оформлен! '
+            db.update_count_product(user_id=user_id)
             db.working_with_place_an_order(clear_basket=1, user_id=user_id)
             text += 'Корзина очищена!'
         else:

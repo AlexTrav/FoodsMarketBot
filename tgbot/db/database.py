@@ -147,6 +147,15 @@ class DataBase:
         search_answer = self.cursor.fetchall()
         return search_answer
 
+    def update_count_basket(self, **kwargs):
+        self.cursor.execute(f'UPDATE basket SET `count` = {kwargs["count_stock"]} WHERE id = {kwargs["basket_id"]}')
+        self.conn.commit()
+
+    def update_count_product(self, **kwargs):
+        for entry in db.get_data(table='basket', where=1, operand1='user_id', operand2=kwargs['user_id']):
+            self.cursor.execute(f'UPDATE products SET `count` = `count` - {entry[3]} WHERE id = {entry[2]}')
+            self.conn.commit()
+
 
 #######################################################################ADMIN#######################################################################################
 
