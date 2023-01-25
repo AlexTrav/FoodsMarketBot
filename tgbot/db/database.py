@@ -49,8 +49,10 @@ class DataBase:
         if not users:
             self.cursor.execute(f'INSERT INTO users(id) VALUES ({kwargs["user_id"]})')
             self.conn.commit()
-        for user in users:
-            if kwargs['user_id'] not in user:
+        else:
+            self.cursor.execute(f'SELECT * FROM users WHERE id = {kwargs["user_id"]}')
+            user = self.cursor.fetchall()
+            if not user:
                 self.cursor.execute(f'INSERT INTO users(id) VALUES ({kwargs["user_id"]})')
                 self.conn.commit()
 
@@ -143,7 +145,7 @@ class DataBase:
         self.conn.commit()
 
     def get_search_answer(self, **kwargs):
-        self.cursor.execute(f'SELECT * FROM products WHERE `name` LIKE "%{kwargs["search_query"]}%"')
+        self.cursor.execute(f'SELECT * FROM products WHERE `name` LIKE "%{kwargs["search_query"]}%" AND `count` > 0')
         search_answer = self.cursor.fetchall()
         return search_answer
 

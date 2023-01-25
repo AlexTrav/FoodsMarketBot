@@ -257,7 +257,7 @@ class Keyboards:
         cb = CallbackData('user_profile', 'action')
         user = db.get_data(table='users', where=1, operand1='id', operand2=user_id)[0]
         my_profile_ikm = InlineKeyboardMarkup(row_width=1)
-        text = f'<b>Ваш баланс</b>: {user[1]}' + '\n'
+        text = f'<b>Ваш баланс</b>: {user[1]}₸' + '\n'
         my_profile_ikm.add(InlineKeyboardButton(text='Пополнить баланс', callback_data=cb.new(action='add_balance')))
         if user[2] is None:
             text += f'<b>Ваш адрес</b>: Не указан' + '\n'
@@ -292,8 +292,8 @@ class Keyboards:
         cb = CallbackData('back', 'action')
         text = 'Введите поисковый запрос (следующим сообщением):'
         search_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
-            [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))],
-            [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))]
+            [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))],
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
         ])
         return text, search_ikm
 
