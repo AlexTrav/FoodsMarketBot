@@ -303,11 +303,14 @@ class Keyboards:
         cb = CallbackData('search_answer', 'id', 'action')
         search_products = db.get_search_answer(search_query=search_query)
         if len(search_products) > 0:
-            text = f'Найдено {len(search_products)} записей:'
+            if len(search_products) >= 60:
+                text = 'Найдено 60 записей:'
+            else:
+                text = f'Найдено {len(search_products)} записей:'
             search_answer_ikm = InlineKeyboardMarkup(row_width=3)
             buttons = []
             for product in search_products:
-                if len(buttons) == 69:
+                if len(buttons) == 60:
                     break
                 buttons.append(InlineKeyboardButton(text=product[2], callback_data=cb.new(id=product[0], action='search_product')))
             search_answer_ikm.add(*buttons).add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
@@ -323,6 +326,61 @@ class Keyboards:
 
 #######################################################################OPERATOR####################################################################################
 
+    @staticmethod
+    def get_start_operator() -> InlineKeyboardMarkup:
+        start_operator_ikm = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text='Работа со складом', callback_data='products')],
+            [InlineKeyboardButton(text='Выйти', callback_data='exit')]
+        ])
+        return start_operator_ikm
+
+    @staticmethod
+    def get_working_warehouse() -> tuple:
+        cb = CallbackData('working_warehouse', 'action')
+        working_warehouse_ikm = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text='Добавить товар', callback_data=cb.new(action='add_product'))],
+            [InlineKeyboardButton(text='Поиск по коду', callback_data=cb.new(action='search_id'))],
+            [InlineKeyboardButton(text='Глобальный поиск', callback_data=cb.new(action='search'))],
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
+        ])
+        text = 'Выберите одно из действий:'
+        return text, working_warehouse_ikm
+
+    @staticmethod
+    def get_product_operator(product_id: int) -> tuple:
+        cb = CallbackData('product', 'id', 'action')
+        for product in db.get_data(table='products'):
+            if product[0] == int(product_id):
+                text = f'Код товара: {product[0]} \n'
+                text += f'Название: {product[2]}. \n'
+                if product[3] != '':
+                    text += f'Производитель: {product[3]}. \n'
+                if product[4] != '':
+                    text += f'Брэнд: {product[4]}. \n'
+                if product[5] != '':
+                    text += f'Описание: {product[5]} \n'
+                text += f'Цена: {product[6]}₸. \n'
+                text += f'Количество на складе: {product[8]}. \n'
+                photo = product[7]
+                product_ikm = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text='-', callback_data=cb.new(id=product[0], action='dec_count_product')),
+                     InlineKeyboardButton(text=product[8], callback_data=cb.new(id=0, action='count_product')),
+                     InlineKeyboardButton(text='+', callback_data=cb.new(id=product[0], action='inc_count_product'))],
+                    [InlineKeyboardButton(text='Изменить цену', callback_data=cb.new(id=product[0], action='change_price'))],
+                    [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
+                ])
+                return text, product_ikm, photo
+        return ()
+
+    @staticmethod
+    def get_change_price_product() -> tuple:
+        cb = CallbackData('change_price', 'action')
+        text = 'Введите новую цену (следующим сообщением):'
+        search_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))],
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
+        ])
+        return text, search_ikm
 
 #######################################################################COURIER#####################################################################################
 

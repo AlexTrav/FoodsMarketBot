@@ -2,7 +2,7 @@ from aiogram import types, Dispatcher
 
 from tgbot.loader import dp, bot
 
-from tgbot.classes.states import UserStatesGroup, CourierStatesGroup  # , OperatorStatesGroup, AdminStatesGroup
+from tgbot.classes.states import UserStatesGroup, CourierStatesGroup, OperatorStatesGroup  # , AdminStatesGroup
 from tgbot.classes.keyboards import Keyboards
 
 from tgbot.db.database import db
@@ -21,7 +21,10 @@ async def start_command(message: types.Message) -> None:
                                reply_markup=Keyboards.get_start_ikm())
     ##################################OPERATOR################################
     elif role_id == 2:
-        pass
+        await OperatorStatesGroup.start.set()
+        await bot.send_message(chat_id=message.from_user.id,
+                               text='Оператор! Добро пожаловать в FoodsMarket!',
+                               reply_markup=Keyboards.get_start_operator())
     ##################################COURIER#################################
     elif role_id == 3:
         await CourierStatesGroup.start.set()

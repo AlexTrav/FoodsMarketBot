@@ -2,7 +2,9 @@ from aiogram import types, Dispatcher
 
 from tgbot.loader import dp
 
-from tgbot.classes.states import UserStatesGroup
+from tgbot.db.database import db
+
+from tgbot.classes.states import UserStatesGroup, OperatorStatesGroup
 from tgbot.classes.keyboards import Keyboards
 
 from aiogram.dispatcher import FSMContext
@@ -35,7 +37,18 @@ async def set_phone_message(message: types.Message, state: FSMContext) -> None:
 
 
 @dp.message_handler(content_types=['text'], state=UserStatesGroup.search)
-async def search_results(message: types.Message, state: FSMContext) -> None:
+async def search_results_message(message: types.Message, state: FSMContext) -> None:
+    await message.delete()
+    async with state.proxy() as data:
+        data['search_query'] = message.text
+    text, keyboard = Keyboards.get_search_products(search_query=message.text)
+    await message.answer(text=text,
+                         reply_markup=keyboard)
+
+#######################################################################OPERATOR#######################################################################################
+
+@dp.message_handler(content_types=['text'], state=OperatorStatesGroup.search)
+async def search_results_message(message: types.Message, state: FSMContext) -> None:
     await message.delete()
     async with state.proxy() as data:
         data['search_query'] = message.text
@@ -44,8 +57,25 @@ async def search_results(message: types.Message, state: FSMContext) -> None:
                          reply_markup=keyboard)
 
 
+@dp.message_handler(content_types=['text'], state=OperatorStatesGroup.change_price)
+async def change_price_product_message(message: types.Message, state: FSMContext) -> None:
+    async with state.proxy() as data:
+        if message.text.isdigit():
+            await OperatorStatesGroup.product.set()
+            db.change_price(new_price=message.text, product_id=data['product_id'])
+            await message.delete()
+            text, keyboard, photo = Keyboards.get_product_operator(product_id=data['product_id'])
+            await message.answer_photo(photo=photo,
+                                       caption=text,
+                                       reply_markup=keyboard)
+        else:
+            await message.reply('Это не цена!')
+
 ###################################################################REGISTER_HANDLERS##################################################################################
 
 def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_message_handler(set_address_message)
     dispatcher.register_message_handler(set_phone_message)
+    dispatcher.register_message_handler(search_results_message)
+    dispatcher.register_message_handler(change_price_product_message)
+

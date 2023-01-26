@@ -145,7 +145,7 @@ class DataBase:
         self.conn.commit()
 
     def get_search_answer(self, **kwargs):
-        self.cursor.execute(f'SELECT * FROM products WHERE `name` LIKE "%{kwargs["search_query"]}%" AND `count` > 0')
+        self.cursor.execute(f'SELECT * FROM products WHERE `name_lc` LIKE "%{kwargs["search_query"].lower()}%" AND `count` > 0')
         search_answer = self.cursor.fetchall()
         return search_answer
 
@@ -163,6 +163,21 @@ class DataBase:
 
 
 #######################################################################OPERATOR####################################################################################
+
+    def working_with_product(self, **kwargs):
+        answer = ''
+        if kwargs['state'] == 'dec_count_product':
+            answer = 'Количетсво уменьшено на 1'
+            self.cursor.execute(f'UPDATE products SET `count` = `count` - 1 WHERE id = {kwargs["product_id"]}')
+        elif kwargs['state'] == 'inc_count_product':
+            answer = 'Количетсво увеличено на 1'
+            self.cursor.execute(f'UPDATE products SET `count` = `count` + 1 WHERE id = {kwargs["product_id"]}')
+        self.conn.commit()
+        return answer
+
+    def change_price(self, **kwargs):
+        self.cursor.execute(f'UPDATE products SET cost = {kwargs["new_price"]} WHERE id = {kwargs["product_id"]}')
+        self.conn.commit()
 
 
 #######################################################################COURIER#####################################################################################

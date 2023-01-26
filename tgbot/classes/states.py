@@ -22,6 +22,11 @@ class UserStatesGroup(StatesGroup):
 
 class OperatorStatesGroup(StatesGroup):
     start = State()
+    working_warehouse = State()
+    search = State()
+    search_id = State()
+    product = State()
+    change_price = State()
 
 
 class CourierStatesGroup(StatesGroup):
