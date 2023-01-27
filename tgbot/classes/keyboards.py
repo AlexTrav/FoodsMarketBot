@@ -1,8 +1,9 @@
+import random
 from datetime import datetime
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 from tgbot.db.database import db
-
+from tgbot.variables.config import Documents
 
 class Keyboards:
 
@@ -362,15 +363,36 @@ class Keyboards:
                 text += f'Цена: {product[6]}₸. \n'
                 text += f'Количество на складе: {product[8]}. \n'
                 photo = product[7]
+                text += f'Добавленное количество: {Documents.new_count}. \n'
+                if Documents.new_price.isdigit():
+                    text += f'Новая цена: {Documents.new_price}₸. \n'
+                else:
+                    text += f'Новая цена: \n'
                 product_ikm = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text='Сохранить', callback_data=cb.new(id=product[0], action='save'))],
                     [InlineKeyboardButton(text='-', callback_data=cb.new(id=product[0], action='dec_count_product')),
-                     InlineKeyboardButton(text=product[8], callback_data=cb.new(id=0, action='count_product')),
+                     InlineKeyboardButton(text=Documents.new_count, callback_data=cb.new(id=0, action='count_product')),
                      InlineKeyboardButton(text='+', callback_data=cb.new(id=product[0], action='inc_count_product'))],
                     [InlineKeyboardButton(text='Изменить цену', callback_data=cb.new(id=product[0], action='change_price'))],
                     [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
                 ])
                 return text, product_ikm, photo
         return ()
+
+    @staticmethod
+    def get_answer_operator(state: str) -> str:
+        answer = ''
+        if state == 'dec_count_product':
+            if Documents.new_count == 0:
+                answer = 'Добавленное количество не может быть меньше 0'
+            else:
+                Documents.new_count -= 1
+                answer = 'Количетсво уменьшено на 1'
+        elif state == 'inc_count_product':
+            Documents.new_count += 1
+            answer = 'Количетсво увеличено на 1'
+        return answer
+
 
     @staticmethod
     def get_change_price_product() -> tuple:
@@ -381,6 +403,55 @@ class Keyboards:
             [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
         ])
         return text, search_ikm
+
+    @staticmethod
+    def set_new_price(new_price: int) -> None:
+        Documents.new_price = new_price
+
+
+    @staticmethod
+    def saving_the_operator_work(product_id: int, user_id: int) -> str:
+        if Documents.new_count == 0 and Documents.new_price == '':
+            return 'Чтобы сохранить, измените что нибудь!'
+        invoice_number = random.randint(1000000, 9999999)
+        invoice_date = datetime.now().strftime("%Y%m%d%H%M")
+        if Documents.new_price.isdigit():
+            cost = Documents.new_price
+            db.product_change_price(new_price=Documents.new_price, product_id=product_id)
+        else:
+            cost = db.get_data(get_name_product=1, field1='cost', operand1=product_id)[0][0]
+        db.product_change_count(new_count=Documents.new_count, product_id=product_id)
+        db.insert_documents(user_id=user_id, product_id=product_id, invoice_date=invoice_date, count=Documents.new_count, cost=cost, invoice_number=invoice_number)
+        Documents.new_count = 0
+        Documents.new_price = ''
+        return 'Успешно'
+
+    @staticmethod
+    def get_search_id() -> tuple:
+        cb = CallbackData('back', 'action')
+        text = 'Введите код товара (следующим сообщением):'
+        search_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))],
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
+        ])
+        return text, search_ikm
+
+    @staticmethod
+    def get_search_id_product(search_id: int) -> tuple:
+        cb = CallbackData('search_answer', 'id', 'action')
+        search_product = db.get_data(table='products', where=1, operand1='id', operand2=search_id)
+        if len(search_product) > 0:
+            text = 'Запись найдена!'
+            search_answer_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+                [InlineKeyboardButton(text=search_product[0][2], callback_data=cb.new(id=search_id, action='search_product'))],
+                [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
+            ])
+        else:
+            text = 'К сожалению запись не найдена'
+            search_answer_ikm = InlineKeyboardMarkup(row_width=3, inline_keyboard=[
+                [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
+            ])
+        return text, search_answer_ikm
 
 #######################################################################COURIER#####################################################################################
 

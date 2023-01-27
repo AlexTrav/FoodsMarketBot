@@ -51,10 +51,25 @@ async def search_results_message(message: types.Message, state: FSMContext) -> N
 async def search_results_message(message: types.Message, state: FSMContext) -> None:
     await message.delete()
     async with state.proxy() as data:
+        data['back_id'] = 1
         data['search_query'] = message.text
     text, keyboard = Keyboards.get_search_products(search_query=message.text)
     await message.answer(text=text,
                          reply_markup=keyboard)
+
+
+@dp.message_handler(content_types=['text'], state=OperatorStatesGroup.search_id)
+async def search_id_results_message(message: types.Message, state: FSMContext) -> None:
+    await message.delete()
+    async with state.proxy() as data:
+        data['back_id'] = 2
+        data['search_id'] = message.text
+    if message.text.isdigit():
+        text, keyboard = Keyboards.get_search_id_product(search_id=message.text)
+        await message.answer(text=text,
+                             reply_markup=keyboard)
+    else:
+        await message.reply('Это не цена!')
 
 
 @dp.message_handler(content_types=['text'], state=OperatorStatesGroup.change_price)
@@ -62,7 +77,7 @@ async def change_price_product_message(message: types.Message, state: FSMContext
     async with state.proxy() as data:
         if message.text.isdigit():
             await OperatorStatesGroup.product.set()
-            db.change_price(new_price=message.text, product_id=data['product_id'])
+            Keyboards.set_new_price(message.text)
             await message.delete()
             text, keyboard, photo = Keyboards.get_product_operator(product_id=data['product_id'])
             await message.answer_photo(photo=photo,
@@ -77,5 +92,6 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_message_handler(set_address_message)
     dispatcher.register_message_handler(set_phone_message)
     dispatcher.register_message_handler(search_results_message)
+    dispatcher.register_message_handler(search_id_results_message)
     dispatcher.register_message_handler(change_price_product_message)
 

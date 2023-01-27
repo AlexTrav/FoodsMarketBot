@@ -164,21 +164,19 @@ class DataBase:
 
 #######################################################################OPERATOR####################################################################################
 
-    def working_with_product(self, **kwargs):
-        answer = ''
-        if kwargs['state'] == 'dec_count_product':
-            answer = 'Количетсво уменьшено на 1'
-            self.cursor.execute(f'UPDATE products SET `count` = `count` - 1 WHERE id = {kwargs["product_id"]}')
-        elif kwargs['state'] == 'inc_count_product':
-            answer = 'Количетсво увеличено на 1'
-            self.cursor.execute(f'UPDATE products SET `count` = `count` + 1 WHERE id = {kwargs["product_id"]}')
-        self.conn.commit()
-        return answer
-
-    def change_price(self, **kwargs):
+    def product_change_price(self, **kwargs):
         self.cursor.execute(f'UPDATE products SET cost = {kwargs["new_price"]} WHERE id = {kwargs["product_id"]}')
         self.conn.commit()
 
+
+    def product_change_count(self, **kwargs):
+        self.cursor.execute(f'UPDATE products SET `count` = `count` + {kwargs["new_count"]}  WHERE id = {kwargs["product_id"]}')
+        self.conn.commit()
+
+    def insert_documents(self, **kwargs):
+        self.cursor.execute(f'INSERT INTO documents(user_id, product_id, invoice_date, `count`, cost, invoice_number)'
+                            f' VALUES ({kwargs["user_id"]}, {kwargs["product_id"]}, {kwargs["invoice_date"]}, {kwargs["count"]}, {kwargs["cost"]}, {kwargs["invoice_number"]})')
+        self.conn.commit()
 
 #######################################################################COURIER#####################################################################################
 
