@@ -427,7 +427,11 @@ async def operator_functions_callback_query(callback: types.CallbackQuery, callb
                                          reply_markup=Keyboards.get_start_operator())
     else:
         if callback_data['action'] == 'add_product':
-            pass
+            await OperatorStatesGroup.add_product.set()
+            text, keyboard = Keyboards.get_add_product()
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard,
+                                             parse_mode='HTML')
         if callback_data['action'] == 'search_id':
             await OperatorStatesGroup.search_id.set()
             text, keyboard = Keyboards.get_search_id()
@@ -555,6 +559,18 @@ async def operator_back_product_callback_query(callback: types.CallbackQuery, ca
                                             reply_markup=keyboard)
 
 
+@dp.callback_query_handler(CallbackData('add_product_msg', 'action').filter(), state=OperatorStatesGroup.add_product)
+async def add_product_msg_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'delete':
+        await callback.answer('Сообщение удалено')
+        await callback.message.delete()
+    else:
+        await OperatorStatesGroup.working_warehouse.set()
+        text, keyboard = Keyboards.get_working_warehouse()
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+        await callback.answer()
+
 #######################################################################COURIER#####################################################################################
 
 @dp.callback_query_handler(text='orders', state=CourierStatesGroup.start)
@@ -630,6 +646,7 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(operator_search_id_answer_callback_query)
     dispatcher.register_callback_query_handler(change_product_callback_query)
     dispatcher.register_callback_query_handler(operator_back_product_callback_query)
+    dispatcher.register_callback_query_handler(add_product_msg_callback_query)
     ##################################COURIER#################################
     dispatcher.register_callback_query_handler(undelivered_orders_callback_query)
     dispatcher.register_callback_query_handler(delivery_orders_callback_query)

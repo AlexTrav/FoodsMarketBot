@@ -2,8 +2,6 @@ from aiogram import types, Dispatcher
 
 from tgbot.loader import dp
 
-from tgbot.db.database import db
-
 from tgbot.classes.states import UserStatesGroup, OperatorStatesGroup
 from tgbot.classes.keyboards import Keyboards
 
@@ -85,6 +83,21 @@ async def change_price_product_message(message: types.Message, state: FSMContext
                                        reply_markup=keyboard)
         else:
             await message.reply('Это не цена!')
+
+
+@dp.message_handler(content_types=['text'], state=OperatorStatesGroup.add_product)
+async def add_product_message(message: types.Message):
+    if message.text.count('|') == 6:
+        answer = Keyboards.add_product(message.text)
+        await message.answer(answer)
+        if 'Продукт добавлен!' in answer:
+            await OperatorStatesGroup.working_warehouse.set()
+            text, keyboard = Keyboards.get_working_warehouse()
+            await message.answer(text=text,
+                                 reply_markup=keyboard)
+    else:
+        await message.reply('Не верный ввод! Должно быть 6 разделителей |')
+    await message.delete()
 
 ###################################################################REGISTER_HANDLERS##################################################################################
 

@@ -324,7 +324,6 @@ class Keyboards:
 
 #######################################################################ADMIN#######################################################################################
 
-
 #######################################################################OPERATOR####################################################################################
 
     @staticmethod
@@ -452,6 +451,46 @@ class Keyboards:
                 [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
             ])
         return text, search_answer_ikm
+
+    @staticmethod
+    def get_add_product() -> tuple:
+        cb = CallbackData('add_product_msg', 'action')
+        text = 'Введите <b>Ключ подкатегории</b>; <b>Наименование товара</b>; <b>Страну производителя</b>; <b>Брэнд</b>; <b>Описание</b>; <b>Цену</b>; <b>Фото (ссылкой)</b>. Через <b>|</b>:'
+        add_product_msg_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))],
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
+        ])
+        return text, add_product_msg_ikm
+
+    @staticmethod
+    def add_product(message_product: str) -> str:
+        answer = ''
+        product = message_product.split('|')
+        subcategories_ids = db.get_unique_subcategories_ids()
+        if product[0].isdigit():
+            if int(product[0]) in subcategories_ids:
+                if product[1]:
+                    if product[5]:
+                        if product[5].isdigit():
+                            if product[6]:
+                                db.insert_product(subcategory_id=product[0], name=product[1], producing_country=product[2], brand=product[3], description=product[4], cost=product[5], photo=product[6])
+                                product_id = db.get_id(name=product[1])
+                                answer = f'Продукт добавлен! Его код: {product_id}'
+                            else:
+                                answer = 'У товара должно быть фото!'
+                        else:
+                            answer = 'Цена должна быть числом!'
+                    else:
+                        answer = 'У товара должна быть цена!'
+                else:
+                    answer = 'У товара должно быть наименование!'
+            else:
+                answer = 'Такого ключа подкатегории нет!'
+        else:
+            answer = 'Ключ подкатегории, должен быть числом!'
+        return answer
+
+
 
 #######################################################################COURIER#####################################################################################
 

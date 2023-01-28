@@ -178,6 +178,24 @@ class DataBase:
                             f' VALUES ({kwargs["user_id"]}, {kwargs["product_id"]}, {kwargs["invoice_date"]}, {kwargs["count"]}, {kwargs["cost"]}, {kwargs["invoice_number"]})')
         self.conn.commit()
 
+    def get_unique_subcategories_ids(self):
+        self.cursor.execute(f'SELECT subcategory_id FROM products')
+        subcategories_ids = self.cursor.fetchall()
+        unique_subcategories_ids = []
+        for subcategory_id in subcategories_ids:
+            if subcategory_id[0] not in unique_subcategories_ids:
+                unique_subcategories_ids.append(subcategory_id[0])
+        return unique_subcategories_ids
+
+    def insert_product(self, **kwargs):
+        self.cursor.execute(f'INSERT INTO products(subcategory_id, `name`, producing_country, brand, description, cost, photo, name_lc) VALUES ({kwargs["subcategory_id"]}, "{kwargs["name"]}", "{kwargs["producing_country"]}", "{kwargs["brand"]}", "{kwargs["description"]}", {kwargs["cost"]}, "{kwargs["photo"]}", "{kwargs["name"].lower()}")')
+        self.conn.commit()
+
+    def get_id(self, **kwargs):
+        self.cursor.execute(f'SELECT `id` FROM products WHERE `name` = "{kwargs["name"]}"')
+        pr_id = self.cursor.fetchall()[0][0]
+        return pr_id
+
 #######################################################################COURIER#####################################################################################
 
     def delivered_order(self, **kwargs):

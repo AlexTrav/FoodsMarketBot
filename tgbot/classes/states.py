@@ -27,6 +27,7 @@ class OperatorStatesGroup(StatesGroup):
     search_id = State()
     product = State()
     change_price = State()
+    add_product = State()
 
 
 class CourierStatesGroup(StatesGroup):
