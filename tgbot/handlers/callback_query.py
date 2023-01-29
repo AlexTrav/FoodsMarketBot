@@ -565,11 +565,48 @@ async def add_product_msg_callback_query(callback: types.CallbackQuery, callback
         await callback.answer('Сообщение удалено')
         await callback.message.delete()
     else:
-        await OperatorStatesGroup.working_warehouse.set()
-        text, keyboard = Keyboards.get_working_warehouse()
+        if callback_data['action'] == 'select_subcategory':
+            await OperatorStatesGroup.select_subcategory.set()
+            keyboard = Keyboards.get_product_catalog()
+            await callback.message.edit_text(text='Выберите категорию продуктов:',
+                                             reply_markup=keyboard)
+        else:
+            await OperatorStatesGroup.working_warehouse.set()
+            text, keyboard = Keyboards.get_working_warehouse()
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard)
+    await callback.answer()
+
+@dp.callback_query_handler(CallbackData('categories', 'id', 'action').filter(), state=OperatorStatesGroup.select_subcategory)
+async def select_category_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await OperatorStatesGroup.add_product.set()
+        text, keyboard = Keyboards.get_add_product()
         await callback.message.edit_text(text=text,
-                                         reply_markup=keyboard)
-        await callback.answer()
+                                         reply_markup=keyboard,
+                                         parse_mode='HTML')
+    else:
+        async with state.proxy() as data:
+            data['product_catalog'] = callback_data['id']
+        await callback.message.edit_text(text='Выберите подкатегорию продуктов:',
+                                         reply_markup=Keyboards.get_product_subcatalog(category_id=callback_data['id']))
+    await callback.answer()
+
+@dp.callback_query_handler(CallbackData('subcategories', 'id', 'action').filter(), state=OperatorStatesGroup.select_subcategory)
+async def select_subcategory_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await callback.message.edit_text(text='Выберите категорию продуктов:',
+                                         reply_markup=Keyboards.get_product_catalog())
+    else:
+        answer = Keyboards.get_answer_subcategory(callback_data['id'])
+        await OperatorStatesGroup.add_product.set()
+        text, keyboard = Keyboards.get_add_product()
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard,
+                                         parse_mode='HTML')
+        await callback.answer(answer)
+    await callback.answer()
+
 
 #######################################################################COURIER#####################################################################################
 
@@ -647,6 +684,7 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(change_product_callback_query)
     dispatcher.register_callback_query_handler(operator_back_product_callback_query)
     dispatcher.register_callback_query_handler(add_product_msg_callback_query)
+    dispatcher.register_callback_query_handler(select_category_callback_query)
     ##################################COURIER#################################
     dispatcher.register_callback_query_handler(undelivered_orders_callback_query)
     dispatcher.register_callback_query_handler(delivery_orders_callback_query)

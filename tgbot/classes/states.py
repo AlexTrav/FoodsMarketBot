@@ -28,6 +28,7 @@ class OperatorStatesGroup(StatesGroup):
     product = State()
     change_price = State()
     add_product = State()
+    select_subcategory = State()
 
 
 class CourierStatesGroup(StatesGroup):

@@ -9,3 +9,8 @@ class Documents:
 
     new_count = 0
     new_price = ''
+
+
+class Products:
+
+    subcategory_id = ''

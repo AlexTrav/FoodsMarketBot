@@ -87,7 +87,7 @@ async def change_price_product_message(message: types.Message, state: FSMContext
 
 @dp.message_handler(content_types=['text'], state=OperatorStatesGroup.add_product)
 async def add_product_message(message: types.Message):
-    if message.text.count('|') == 6:
+    if message.text.count(';') == 5:
         answer = Keyboards.add_product(message.text)
         await message.answer(answer)
         if 'Продукт добавлен!' in answer:
@@ -95,8 +95,17 @@ async def add_product_message(message: types.Message):
             text, keyboard = Keyboards.get_working_warehouse()
             await message.answer(text=text,
                                  reply_markup=keyboard)
+        else:
+            await OperatorStatesGroup.working_warehouse.set()
+            text, keyboard = Keyboards.get_working_warehouse()
+            await message.answer(text=text,
+                                 reply_markup=keyboard)
     else:
-        await message.reply('Не верный ввод! Должно быть 6 разделителей |')
+        await message.answer('Не верный ввод! Должно быть 5 разделителей ;')
+        await OperatorStatesGroup.working_warehouse.set()
+        text, keyboard = Keyboards.get_working_warehouse()
+        await message.answer(text=text,
+                             reply_markup=keyboard)
     await message.delete()
 
 ###################################################################REGISTER_HANDLERS##################################################################################

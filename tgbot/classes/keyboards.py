@@ -3,7 +3,7 @@ from datetime import datetime
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 from tgbot.db.database import db
-from tgbot.variables.config import Documents
+from tgbot.variables.config import Documents, Products
 
 class Keyboards:
 
@@ -455,8 +455,14 @@ class Keyboards:
     @staticmethod
     def get_add_product() -> tuple:
         cb = CallbackData('add_product_msg', 'action')
-        text = 'Введите <b>Ключ подкатегории</b>; <b>Наименование товара</b>; <b>Страну производителя</b>; <b>Брэнд</b>; <b>Описание</b>; <b>Цену</b>; <b>Фото (ссылкой)</b>. Через <b>|</b>:'
+        if Products.subcategory_id:
+            subcategory = db.get_subcategory(subcategory_id=Products.subcategory_id)
+            text = f'Подкатегория: {subcategory} \n'
+        else:
+            text = f'Подкатегория: \n'
+        text += 'Введите <b>Наименование товара</b>; <b>Страну производителя</b>; <b>Брэнд</b>; <b>Описание</b>; <b>Цену</b>; <b>Фото (ссылкой)</b>. Через <b>;</b>'
         add_product_msg_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='Выбрать подкатегорию', callback_data=cb.new(action='select_subcategory'))],
             [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))],
             [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
         ])
@@ -464,33 +470,35 @@ class Keyboards:
 
     @staticmethod
     def add_product(message_product: str) -> str:
-        answer = ''
-        product = message_product.split('|')
-        subcategories_ids = db.get_unique_subcategories_ids()
-        if product[0].isdigit():
-            if int(product[0]) in subcategories_ids:
-                if product[1]:
-                    if product[5]:
-                        if product[5].isdigit():
-                            if product[6]:
-                                db.insert_product(subcategory_id=product[0], name=product[1], producing_country=product[2], brand=product[3], description=product[4], cost=product[5], photo=product[6])
-                                product_id = db.get_id(name=product[1])
-                                answer = f'Продукт добавлен! Его код: {product_id}'
-                            else:
-                                answer = 'У товара должно быть фото!'
+        product = message_product.split(';')
+        if Products.subcategory_id:
+            if product[0]:
+                if product[4]:
+                    if product[4].isdigit():
+                        if product[5]:
+                            db.insert_product(subcategory_id=Products.subcategory_id, name=product[0], producing_country=product[1], brand=product[2], description=product[3], cost=product[4], photo=product[5])
+                            product_id = db.get_id(name=product[0])
+                            answer = f'Продукт добавлен! Его код: {product_id}'
+                            Products.subcategory_id = ''
                         else:
-                            answer = 'Цена должна быть числом!'
+                            answer = 'У товара должно быть фото!'
                     else:
-                        answer = 'У товара должна быть цена!'
+                        answer = 'Цена должна быть числом!'
                 else:
-                    answer = 'У товара должно быть наименование!'
+                    answer = 'У товара должна быть цена!'
             else:
-                answer = 'Такого ключа подкатегории нет!'
+                answer = 'У товара должно быть наименование!'
         else:
-            answer = 'Ключ подкатегории, должен быть числом!'
+            answer = 'Подкатегория не выбрана!'
         return answer
 
 
+    @staticmethod
+    def get_answer_subcategory(subcategory_id: int) -> str:
+        Products.subcategory_id = int(subcategory_id)
+        subcategory_name = db.get_subcategory(subcategory_id=subcategory_id)
+        answer = f'Выбрана подкатегория: {subcategory_name}'
+        return answer
 
 #######################################################################COURIER#####################################################################################
 

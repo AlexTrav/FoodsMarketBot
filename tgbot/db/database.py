@@ -196,6 +196,11 @@ class DataBase:
         pr_id = self.cursor.fetchall()[0][0]
         return pr_id
 
+    def get_subcategory(self, **kwargs):
+        self.cursor.execute(f'SELECT subcategory_name FROM subcategories_products WHERE id = {kwargs["subcategory_id"]}')
+        subcategory_name = self.cursor.fetchall()[0][0]
+        return subcategory_name
+
 #######################################################################COURIER#####################################################################################
 
     def delivered_order(self, **kwargs):
