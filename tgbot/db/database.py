@@ -158,10 +158,6 @@ class DataBase:
             self.cursor.execute(f'UPDATE products SET `count` = `count` - {entry[3]} WHERE id = {entry[2]}')
             self.conn.commit()
 
-
-#######################################################################ADMIN#######################################################################################
-
-
 #######################################################################OPERATOR####################################################################################
 
     def product_change_price(self, **kwargs):
@@ -207,6 +203,37 @@ class DataBase:
         self.cursor.execute(f'UPDATE delivery SET worker_id = {kwargs["user_id"]}, is_completed = 1 WHERE order_id = {kwargs["order_id"]}')
         self.conn.commit()
         self.cursor.execute(f'UPDATE orders SET is_delivered = 1 WHERE id = {kwargs["order_id"]}')
+        self.conn.commit()
+
+
+#######################################################################ADMIN#######################################################################################
+
+    def is_roles(self, **kwargs):
+        is_operator, is_courier, is_admin = False, False, False
+        self.cursor.execute(f'SELECT role_id FROM workers WHERE id = {kwargs["user_id"]}')
+        for entry in self.cursor.fetchall():
+            if entry[0]:
+                if entry[0] == 2:
+                    is_operator = True
+                elif entry[0] == 3:
+                    is_courier = True
+                elif entry[0] == 4:
+                    is_admin = True
+        return is_operator, is_courier, is_admin
+
+    def working_with_roles(self, **kwargs):
+        if kwargs['action'] == 'del_role_operator':
+            self.cursor.execute(f'DELETE FROM workers WHERE id = {kwargs["user_id"]} AND role_id = 2')
+        if kwargs['action'] == 'del_role_courier':
+            self.cursor.execute(f'DELETE FROM workers WHERE id = {kwargs["user_id"]} AND role_id = 3')
+        if kwargs['action'] == 'del_role_admin':
+            self.cursor.execute(f'DELETE FROM workers WHERE id = {kwargs["user_id"]} AND role_id = 4')
+        if kwargs['action'] == 'add_role_operator':
+            self.cursor.execute(f'INSERT INTO workers(id, role_id) VALUES ({kwargs["user_id"]}, 2)')
+        if kwargs['action'] == 'add_role_courier':
+            self.cursor.execute(f'INSERT INTO workers(id, role_id) VALUES ({kwargs["user_id"]}, 3)')
+        if kwargs['action'] == 'add_role_admin':
+            self.cursor.execute(f'INSERT INTO workers(id, role_id) VALUES ({kwargs["user_id"]}, 4)')
         self.conn.commit()
 
 

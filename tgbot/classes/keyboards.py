@@ -11,15 +11,16 @@ class Keyboards:
 #######################################################################USER#########################################################################################
 
     @staticmethod
-    def get_start_ikm() -> InlineKeyboardMarkup:
-        start_ikm = InlineKeyboardMarkup(inline_keyboard=[
+    def get_start_ikm(user_id: int) -> InlineKeyboardMarkup:
+        start_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
             [InlineKeyboardButton(text='Каталог продуктов', callback_data='product_catalog')],
             [InlineKeyboardButton(text='Моя корзина', callback_data='my_basket')],
             [InlineKeyboardButton(text='Мои заказы', callback_data='my_orders')],
             [InlineKeyboardButton(text='Глобальный поиск', callback_data='search')],
-            [InlineKeyboardButton(text='Профиль', callback_data='profile')],
-            [InlineKeyboardButton(text='Работа', callback_data='work')]
+            [InlineKeyboardButton(text='Профиль', callback_data='profile')]
         ])
+        if user_id in Keyboards.get_workers():
+            start_ikm.add(InlineKeyboardButton(text='Работа', callback_data='work'))
         return start_ikm
 
     @staticmethod
@@ -259,7 +260,7 @@ class Keyboards:
         user = db.get_data(table='users', where=1, operand1='id', operand2=user_id)[0]
         my_profile_ikm = InlineKeyboardMarkup(row_width=1)
         text = f'<b>Ваш баланс</b>: {user[1]}₸' + '\n'
-        my_profile_ikm.add(InlineKeyboardButton(text='Пополнить баланс', callback_data=cb.new(action='add_balance')))
+        # my_profile_ikm.add(InlineKeyboardButton(text='Пополнить баланс', callback_data=cb.new(action='add_balance')))
         if user[2] is None:
             text += f'<b>Ваш адрес</b>: Не указан' + '\n'
             my_profile_ikm.add(InlineKeyboardButton(text='Указать адрес', callback_data=cb.new(action='set_address')))
@@ -322,7 +323,20 @@ class Keyboards:
             ])
         return text, search_answer_ikm
 
-#######################################################################ADMIN#######################################################################################
+    @staticmethod
+    def get_workers() -> list:
+        workers_ids = []
+        for entry in db.get_data(table='workers'):
+            workers_ids.append(entry[0])
+        return workers_ids
+
+    @staticmethod
+    def get_users_table() -> list:
+        users_ids = []
+        for entry in db.get_data(table='users'):
+            users_ids.append(entry[0])
+        return users_ids
+
 
 #######################################################################OPERATOR####################################################################################
 
@@ -545,3 +559,67 @@ class Keyboards:
             [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
         ])
         return text, delivery_order_item_ikm
+
+#######################################################################ADMIN#######################################################################################
+
+    @staticmethod
+    def get_start_admin() -> InlineKeyboardMarkup:
+        start_admin_ikm = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text='Работа со складом', callback_data='products')],
+            [InlineKeyboardButton(text='Работа с пользователем', callback_data='users')],  # --> 1. , 2.
+            [InlineKeyboardButton(text='Документы', callback_data='documents')],  # --> 1, 2, 3 ... [InlineKeyboardButton(text='(document_types.name)', callback_data='documents')]
+            [InlineKeyboardButton(text='Выйти', callback_data='exit')]
+        ])
+        return start_admin_ikm
+
+    @staticmethod
+    def get_users() -> tuple:
+        cb = CallbackData('users', 'action')
+        text = 'Выберите действие:'
+        get_users_admin_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='Выдача прав', callback_data=cb.new(action='give_role'))],
+            [InlineKeyboardButton(text='Пополнение баланса', callback_data=cb.new(action='add_balance'))],
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
+        ])
+        return text, get_users_admin_ikm
+
+    @staticmethod
+    def set_user_id() -> tuple:
+        cb = CallbackData('set_user_id', 'action')
+        text = 'Введите код пользователя (следующим сообщением):'
+        set_user_id_ikm = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))],
+                [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
+            ])
+        return text, set_user_id_ikm
+
+    @staticmethod
+    def get_user_roles(user_id: int) -> tuple:
+        cb = CallbackData('roles_info','id', 'action')
+        text = f'Пользователь: {user_id} \n'
+        text += 'Роли: \n'
+        is_operator, is_courier, is_admin = db.is_roles(user_id=user_id)
+        text += f'Опетратор: {"✅" if is_operator else "❌"} \n'
+        text += f'Курьер: {"✅" if is_courier else "❌"} \n'
+        text += f'Админ: {"✅" if is_admin else "❌"} \n'
+        roles_ikm = InlineKeyboardMarkup(row_width=1)
+        if is_operator:
+            roles_ikm.add(InlineKeyboardButton(text='Убрать роль оператора', callback_data=cb.new(id=user_id, action='del_role_operator')))
+        else:
+            roles_ikm.add(InlineKeyboardButton(text='Добавить роль оператора', callback_data=cb.new(id=user_id, action='add_role_operator')))
+        if is_courier:
+            roles_ikm.add(InlineKeyboardButton(text='Убрать роль курьера', callback_data=cb.new(id=user_id, action='del_role_courier')))
+        else:
+            roles_ikm.add(InlineKeyboardButton(text='Добавить роль курьера', callback_data=cb.new(id=user_id, action='add_role_courier')))
+        if is_admin:
+            roles_ikm.add(InlineKeyboardButton(text='Убрать роль админа', callback_data=cb.new(id=user_id, action='del_role_admin')))
+        else:
+            roles_ikm.add(InlineKeyboardButton(text='Добавить роль админа', callback_data=cb.new(id=user_id, action='add_role_admin')))
+        roles_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+        return text, roles_ikm
+
+
+
+    @staticmethod
+    def get_user_inf(user_id: int) -> tuple:
+        pass

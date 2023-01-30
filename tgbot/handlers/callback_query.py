@@ -5,7 +5,7 @@ from aiogram.utils.callback_data import CallbackData
 
 from tgbot.loader import dp
 
-from tgbot.classes.states import UserStatesGroup, CourierStatesGroup, OperatorStatesGroup  # , AdminStatesGroup
+from tgbot.classes.states import UserStatesGroup, CourierStatesGroup, OperatorStatesGroup, AdminStatesGroup
 from tgbot.classes.keyboards import Keyboards
 
 from tgbot.db.database import db
@@ -48,7 +48,7 @@ async def product_subcatalog_callback_query(callback: types.CallbackQuery, callb
     if callback_data['action'] == 'back':
         await UserStatesGroup.start.set()
         await callback.message.edit_text(text='Добро пожаловать в FoodsMarket!',
-                                         reply_markup=Keyboards.get_start_ikm())
+                                         reply_markup=Keyboards.get_start_ikm(callback.from_user.id))
     else:
         await UserStatesGroup.product_subcatalog.set()
         async with state.proxy() as data:
@@ -175,7 +175,7 @@ async def place_an_order_callback_query(callback: types.CallbackQuery, callback_
     if callback_data['action'] == 'back':
         await UserStatesGroup.start.set()
         await callback.message.edit_text(text='Добро пожаловать в FoodsMarket!',
-                                         reply_markup=Keyboards.get_start_ikm())
+                                         reply_markup=Keyboards.get_start_ikm(callback.from_user.id))
     else:
         if callback_data['action'] == 'place_an_order':
             answer = Keyboards.place_an_order(user_id=callback.from_user.id)
@@ -246,7 +246,7 @@ async def open_order_callback_query(callback: types.CallbackQuery, callback_data
     if callback_data['action'] == 'back':
         await UserStatesGroup.start.set()
         await callback.message.edit_text(text='Добро пожаловать в FoodsMarket!',
-                                         reply_markup=Keyboards.get_start_ikm())
+                                         reply_markup=Keyboards.get_start_ikm(callback.from_user.id))
     else:
         if callback_data['action'] == 'order_item':
             await UserStatesGroup.order_item.set()
@@ -307,7 +307,7 @@ async def user_profile_callback_query(callback: types.CallbackQuery, callback_da
     if callback_data['action'] == 'back':
         await UserStatesGroup.start.set()
         await callback.message.edit_text(text='Добро пожаловать в FoodsMarket!',
-                                         reply_markup=Keyboards.get_start_ikm())
+                                         reply_markup=Keyboards.get_start_ikm(callback.from_user.id))
     else:
         if callback_data['action'] == 'add_balance':
             answer = Keyboards.add_balance_user(user_id=callback.from_user.id)
@@ -345,7 +345,7 @@ async def working_callback_query(callback: types.CallbackQuery, callback_data: d
     if callback_data['action'] == 'back':
         await UserStatesGroup.start.set()
         await callback.message.edit_text(text='Добро пожаловать в FoodsMarket!',
-                                         reply_markup=Keyboards.get_start_ikm())
+                                         reply_markup=Keyboards.get_start_ikm(callback.from_user.id))
     else:
         if callback_data['action'] == 'admin':
             answer = db.check_role(user_id=callback.from_user.id, role_id=4)
@@ -381,7 +381,7 @@ async def back_search_callback_query(callback: types.CallbackQuery, callback_dat
     else:
         await UserStatesGroup.start.set()
         await callback.message.edit_text(text='Добро пожаловать в FoodsMarket!',
-                                         reply_markup=Keyboards.get_start_ikm())
+                                         reply_markup=Keyboards.get_start_ikm(callback.from_user.id))
         await callback.answer()
 
 
@@ -405,9 +405,6 @@ async def search_answer_callback_query(callback: types.CallbackQuery, callback_d
     await callback.answer()
 
 
-#######################################################################ADMIN#######################################################################################
-
-
 #######################################################################OPERATOR####################################################################################
 
 @dp.callback_query_handler(text='products', state=OperatorStatesGroup.start)
@@ -422,9 +419,15 @@ async def working_warehouse_callback_query(callback: types.CallbackQuery):
 @dp.callback_query_handler(CallbackData('working_warehouse', 'action').filter(), state=OperatorStatesGroup.working_warehouse)
 async def operator_functions_callback_query(callback: types.CallbackQuery, callback_data: dict):
     if callback_data['action'] == 'back':
-        await OperatorStatesGroup.start.set()
-        await callback.message.edit_text(text='Оператор! Добро пожаловать в FoodsMarket!',
-                                         reply_markup=Keyboards.get_start_operator())
+        role_id = db.get_role_id(user_id=callback.from_user.id)
+        if role_id == 4:
+            await AdminStatesGroup.start.set()
+            await callback.message.edit_text(text='Админ! Добро пожаловать в FoodsMarket!',
+                                             reply_markup=Keyboards.get_start_admin())
+        else:
+            await OperatorStatesGroup.start.set()
+            await callback.message.edit_text(text='Оператор! Добро пожаловать в FoodsMarket!',
+                                             reply_markup=Keyboards.get_start_operator())
     else:
         if callback_data['action'] == 'add_product':
             await OperatorStatesGroup.add_product.set()
@@ -651,6 +654,68 @@ async def delivered_callback_query(callback: types.CallbackQuery, callback_data:
         await callback.answer('Заказ успешно выполнен!')
 
 
+#######################################################################ADMIN##########################################################################################
+
+@dp.callback_query_handler(text='products', state=AdminStatesGroup.start)
+async def working_warehouse_callback_query_admin(callback: types.CallbackQuery):
+    await OperatorStatesGroup.working_warehouse.set()
+    text, keyboard = Keyboards.get_working_warehouse()
+    await callback.message.edit_text(text=text,
+                                     reply_markup=keyboard)
+    await callback.answer()
+
+
+@dp.callback_query_handler(text='users', state=AdminStatesGroup.start)
+async def users_callback_query_admin(callback: types.CallbackQuery):
+    await AdminStatesGroup.users.set()
+    text, keyboard = Keyboards.get_users()
+    await callback.message.edit_text(text=text,
+                                     reply_markup=keyboard)
+    await callback.answer()
+
+@dp.callback_query_handler(CallbackData('users', 'action').filter(), state=AdminStatesGroup.users)
+async def working_with_users_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await AdminStatesGroup.start.set()
+        await callback.message.edit_text(text='Админ! Добро пожаловать в FoodsMarket!',
+                                         reply_markup=Keyboards.get_start_admin())
+    else:
+        if callback_data['action'] == 'give_role':
+            await AdminStatesGroup.give_role_user.set()
+            text, keyboard = Keyboards.set_user_id()
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard)
+        if callback_data['action'] == 'add_balance':
+            await AdminStatesGroup.add_balance_user.set()
+            text, keyboard = Keyboards.set_user_id()
+            await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+
+
+@dp.callback_query_handler(CallbackData('set_user_id', 'action').filter(), state='*')
+async def set_user_id_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'delete':
+        await callback.message.delete()
+    else:
+        await AdminStatesGroup.users.set()
+        text, keyboard = Keyboards.get_users()
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+        await callback.answer()
+
+@dp.callback_query_handler(CallbackData('roles_info','id', 'action').filter(), state=AdminStatesGroup.give_role_user)
+async def working_roles_user_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        text, keyboard = Keyboards.set_user_id()
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+    else:
+        db.working_with_roles(action=callback_data['action'], user_id=callback_data['id'])
+        text, keyboard = Keyboards.get_user_roles(user_id=callback_data['id'])
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+
+
 ###################################################################REGISTER_HANDLERS##################################################################################
 
 def register_handlers(dispatcher: Dispatcher):
@@ -672,8 +737,6 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(get_search_callback_query)
     dispatcher.register_callback_query_handler(back_search_callback_query)
     dispatcher.register_callback_query_handler(search_answer_callback_query)
-    ##################################ADMIN###################################
-
     ##################################OPERATOR################################
     dispatcher.register_callback_query_handler(working_warehouse_callback_query)
     dispatcher.register_callback_query_handler(operator_functions_callback_query)
@@ -685,8 +748,14 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(operator_back_product_callback_query)
     dispatcher.register_callback_query_handler(add_product_msg_callback_query)
     dispatcher.register_callback_query_handler(select_category_callback_query)
+    dispatcher.register_callback_query_handler(select_subcategory_callback_query)
     ##################################COURIER#################################
     dispatcher.register_callback_query_handler(undelivered_orders_callback_query)
     dispatcher.register_callback_query_handler(delivery_orders_callback_query)
     dispatcher.register_callback_query_handler(delivered_callback_query)
-
+    ##################################ADMIN###################################
+    dispatcher.register_callback_query_handler(working_warehouse_callback_query_admin)
+    dispatcher.register_callback_query_handler(users_callback_query_admin)
+    dispatcher.register_callback_query_handler(working_with_users_callback_query)
+    dispatcher.register_callback_query_handler(set_user_id_callback_query)
+    dispatcher.register_callback_query_handler(working_roles_user_callback_query)

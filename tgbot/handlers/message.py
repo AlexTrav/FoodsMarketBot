@@ -2,7 +2,7 @@ from aiogram import types, Dispatcher
 
 from tgbot.loader import dp
 
-from tgbot.classes.states import UserStatesGroup, OperatorStatesGroup
+from tgbot.classes.states import UserStatesGroup, OperatorStatesGroup, AdminStatesGroup
 from tgbot.classes.keyboards import Keyboards
 
 from aiogram.dispatcher import FSMContext
@@ -108,12 +108,59 @@ async def add_product_message(message: types.Message):
                              reply_markup=keyboard)
     await message.delete()
 
+#######################################################################ADMIN##########################################################################################
+
+@dp.message_handler(content_types=['text'], state=AdminStatesGroup.give_role_user)
+async def give_role_message(message: types.Message):
+    if message.text.isdigit():
+        if int(message.text) in Keyboards.get_users_table():
+            text, keyboard = Keyboards.get_user_roles(user_id=message.text)
+            await message.answer(text=text,
+                                 reply_markup=keyboard)
+        else:
+            await message.answer('Такого кода нет в базе данных')
+            text, keyboard = Keyboards.set_user_id()
+            await message.answer(text=text,
+                                 reply_markup=keyboard)
+    else:
+        await message.answer('Код должен быть числовым')
+        text, keyboard = Keyboards.set_user_id()
+        await message.answer(text=text,
+                             reply_markup=keyboard)
+    await message.delete()
+
+
+@dp.message_handler(content_types=['text'], state=AdminStatesGroup.add_balance_user)
+async def add_balance_message(message: types.Message):
+    if message.text.isdigit():
+        if int(message.text) in Keyboards.get_users_table():
+            text, keyboard = Keyboards.get_user_inf(user_id=int(message.text))
+            await message.answer(text=text,
+                                 reply_markup=keyboard)
+        else:
+            await message.answer('Такого кода нет в базе данных')
+            text, keyboard = Keyboards.set_user_id()
+            await message.answer(text=text,
+                                 reply_markup=keyboard)
+    else:
+        await message.answer('Код должен быть числовым')
+        text, keyboard = Keyboards.set_user_id()
+        await message.answer(text=text,
+                             reply_markup=keyboard)
+    await message.delete()
+
 ###################################################################REGISTER_HANDLERS##################################################################################
 
 def register_handlers(dispatcher: Dispatcher):
+    ###################################USER###################################
     dispatcher.register_message_handler(set_address_message)
     dispatcher.register_message_handler(set_phone_message)
     dispatcher.register_message_handler(search_results_message)
+    ##################################OPERATOR################################
+    dispatcher.register_message_handler(search_results_message)
     dispatcher.register_message_handler(search_id_results_message)
     dispatcher.register_message_handler(change_price_product_message)
-
+    dispatcher.register_message_handler(add_product_message)
+    ##################################ADMIN###################################
+    dispatcher.register_message_handler(give_role_message)
+    dispatcher.register_message_handler(add_balance_message)

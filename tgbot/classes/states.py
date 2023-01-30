@@ -39,3 +39,6 @@ class CourierStatesGroup(StatesGroup):
 
 class AdminStatesGroup(StatesGroup):
     start = State()
+    users = State()
+    give_role_user = State()
+    add_balance_user = State()
