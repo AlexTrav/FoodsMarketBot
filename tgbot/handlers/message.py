@@ -1,11 +1,14 @@
 from aiogram import types, Dispatcher
 
+from tgbot.db.database import db
 from tgbot.loader import dp
 
 from tgbot.classes.states import UserStatesGroup, OperatorStatesGroup, AdminStatesGroup
 from tgbot.classes.keyboards import Keyboards
 
 from aiogram.dispatcher import FSMContext
+
+from tgbot.variables.config import Users
 
 
 #######################################################################USER#########################################################################################
@@ -130,13 +133,14 @@ async def give_role_message(message: types.Message):
     await message.delete()
 
 
-@dp.message_handler(content_types=['text'], state=AdminStatesGroup.add_balance_user)
-async def add_balance_message(message: types.Message):
+@dp.message_handler(content_types=['text'], state=AdminStatesGroup.add_balance)
+async def add_user_id_message(message: types.Message):
     if message.text.isdigit():
         if int(message.text) in Keyboards.get_users_table():
-            text, keyboard = Keyboards.get_user_inf(user_id=int(message.text))
+            text, keyboard = Keyboards.get_user_inf(user_id=message.text)
             await message.answer(text=text,
-                                 reply_markup=keyboard)
+                                 reply_markup=keyboard,
+                                 parse_mode='HTML')
         else:
             await message.answer('Такого кода нет в базе данных')
             text, keyboard = Keyboards.set_user_id()
@@ -148,6 +152,22 @@ async def add_balance_message(message: types.Message):
         await message.answer(text=text,
                              reply_markup=keyboard)
     await message.delete()
+
+
+@dp.message_handler(content_types=['text'], state=AdminStatesGroup.add_balance_user)
+async def add_balance_message(message: types.Message):
+    if message.text.isdigit():
+        await AdminStatesGroup.add_balance.set()
+        db.update_balance(sum=message.text, user_id=Users.id)
+        text, keyboard = Keyboards.get_user_inf(user_id=Users.id)
+        await message.answer(text=text,
+                             reply_markup=keyboard,
+                             parse_mode='HTML')
+        Users.id = ''
+    else:
+        await message.answer('Сумма должна быть числом')
+    await message.delete()
+
 
 ###################################################################REGISTER_HANDLERS##################################################################################
 
@@ -163,4 +183,5 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_message_handler(add_product_message)
     ##################################ADMIN###################################
     dispatcher.register_message_handler(give_role_message)
+    dispatcher.register_message_handler(add_user_id_message)
     dispatcher.register_message_handler(add_balance_message)

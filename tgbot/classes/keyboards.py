@@ -3,7 +3,7 @@ from datetime import datetime
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 from tgbot.db.database import db
-from tgbot.variables.config import Documents, Products
+from tgbot.variables.config import Documents, Products, Users
 
 class Keyboards:
 
@@ -618,8 +618,43 @@ class Keyboards:
         roles_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
         return text, roles_ikm
 
-
-
     @staticmethod
     def get_user_inf(user_id: int) -> tuple:
-        pass
+        cb = CallbackData('user_info', 'id', 'action')
+        user = db.get_data(table='users', where=1, operand1='id', operand2=user_id)[0]
+        text = f'Пользователь: {user_id} \n'
+        user_profile_ikm = InlineKeyboardMarkup(row_width=1)
+        user_profile_ikm.add(InlineKeyboardButton(text='Пополнить баланс', callback_data=cb.new(id=user_id, action='add_balance')))
+        text += f'<b>Баланс</b>: {user[1]}₸' + '\n'
+        if user[2] is None:
+            text += f'Адрес: Не указан' + '\n'
+        else:
+            text += f'Адрес: {user[2]}' + '\n'
+        if user[3] is None:
+            text += f'Телефон: Не указан' + '\n'
+        else:
+            text += f'Телефон {user[3]}' + '\n'
+        user_profile_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+        return text, user_profile_ikm
+
+    @staticmethod
+    def get_add_balance_form(user_id: int) -> tuple:
+        cb = CallbackData('back', 'id', 'action')
+        Users.id = user_id
+        text = 'Введите сумму на которую хотите пополнить счёт пользователю (следующим сообщением):'
+        search_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='Понятно', callback_data=cb.new(id=-1, action='delete'))],
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=user_id, action='back'))]
+        ])
+        return text, search_ikm
+
+    @staticmethod
+    def get_document_types() -> tuple:
+        cb = CallbackData('document_types', 'id', 'action')
+        text = 'Выберите тип документа'
+        documents_type_ikm = InlineKeyboardMarkup(row_width=1)
+        buttons = []
+        for entry in db.get_data(table='document_types'):
+            buttons.append(InlineKeyboardButton(text=entry[1], callback_data=cb.new(id=entry[0], action='document')))
+        documents_type_ikm.add(*buttons).add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+        return text, documents_type_ikm

@@ -673,6 +673,16 @@ async def users_callback_query_admin(callback: types.CallbackQuery):
                                      reply_markup=keyboard)
     await callback.answer()
 
+
+@dp.callback_query_handler(text='documents', state=AdminStatesGroup.start)
+async def document_types_callback_query_admin(callback: types.CallbackQuery):
+    await AdminStatesGroup.documents.set()
+    text, keyboard = Keyboards.get_document_types()
+    await callback.message.edit_text(text=text,
+                                     reply_markup=keyboard)
+    await callback.answer()
+
+
 @dp.callback_query_handler(CallbackData('users', 'action').filter(), state=AdminStatesGroup.users)
 async def working_with_users_callback_query(callback: types.CallbackQuery, callback_data: dict):
     if callback_data['action'] == 'back':
@@ -686,7 +696,7 @@ async def working_with_users_callback_query(callback: types.CallbackQuery, callb
             await callback.message.edit_text(text=text,
                                              reply_markup=keyboard)
         if callback_data['action'] == 'add_balance':
-            await AdminStatesGroup.add_balance_user.set()
+            await AdminStatesGroup.add_balance.set()
             text, keyboard = Keyboards.set_user_id()
             await callback.message.edit_text(text=text,
                                          reply_markup=keyboard)
@@ -715,6 +725,29 @@ async def working_roles_user_callback_query(callback: types.CallbackQuery, callb
         await callback.message.edit_text(text=text,
                                          reply_markup=keyboard)
 
+@dp.callback_query_handler(CallbackData('user_info', 'id', 'action').filter(), state=AdminStatesGroup.add_balance)
+async def user_info_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        text, keyboard = Keyboards.set_user_id()
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+    else:
+        await AdminStatesGroup.add_balance_user.set()
+        text, keyboard = Keyboards.get_add_balance_form(callback_data['id'])
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+    await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('back', 'id', 'action').filter(), state=AdminStatesGroup.add_balance_user)
+async def add_balance_user_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'delete':
+        await callback.message.delete()
+    else:
+        text, keyboard = Keyboards.get_user_inf(callback_data['id'])
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard,
+                                         parse_mode='HTML')
 
 ###################################################################REGISTER_HANDLERS##################################################################################
 
@@ -759,3 +792,6 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(working_with_users_callback_query)
     dispatcher.register_callback_query_handler(set_user_id_callback_query)
     dispatcher.register_callback_query_handler(working_roles_user_callback_query)
+    dispatcher.register_callback_query_handler(user_info_callback_query)
+    dispatcher.register_callback_query_handler(add_balance_user_callback_query)
+    dispatcher.register_message_handler(document_types_callback_query_admin)

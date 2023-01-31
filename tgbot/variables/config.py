@@ -14,3 +14,8 @@ class Documents:
 class Products:
 
     subcategory_id = ''
+
+
+class Users:
+
+    id = ''

@@ -237,6 +237,11 @@ class DataBase:
         self.conn.commit()
 
 
+    def update_balance(self, **kwargs):
+        self.cursor.execute(f'UPDATE users SET balance = balance + {kwargs["sum"]} WHERE id = {kwargs["user_id"]}')
+        self.conn.commit()
+
+
 #######################################################################DB-OBJECT###################################################################################
 
 db = DataBase()
