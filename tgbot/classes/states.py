@@ -44,3 +44,4 @@ class AdminStatesGroup(StatesGroup):
     add_balance = State()
     add_balance_user = State()
     documents = State()
+    document = State()

@@ -10,6 +10,8 @@ from tgbot.classes.keyboards import Keyboards
 
 from tgbot.db.database import db
 
+from tgbot.variables.config import MainPage
+
 
 @dp.callback_query_handler(text='exit', state='*')
 async def exit_callback_query(callback: types.CallbackQuery, state: FSMContext):
@@ -749,6 +751,49 @@ async def add_balance_user_callback_query(callback: types.CallbackQuery, callbac
                                          reply_markup=keyboard,
                                          parse_mode='HTML')
 
+
+@dp.callback_query_handler(CallbackData('document_types', 'id', 'action').filter(), state=AdminStatesGroup.documents)
+async def get_documents_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await AdminStatesGroup.start.set()
+        await callback.message.edit_text(text='Админ! Добро пожаловать в FoodsMarket!',
+                                         reply_markup=Keyboards.get_start_admin())
+    else:
+        MainPage.entries = 10
+        text, keyboard = Keyboards.get_documents(callback_data['id'])
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+    await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('document', 'id', 'action').filter(), state=AdminStatesGroup.documents)
+async def get_document_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        text, keyboard = Keyboards.get_document_types()
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+    else:
+        if callback_data['action'] == 'up_page' or callback_data['action'] == 'down_page':
+            Keyboards.change_page(callback_data['action'])
+            text, keyboard = Keyboards.get_documents(callback_data['id'])
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard)
+        else:
+            await AdminStatesGroup.document.set()
+            text, keyboard = Keyboards.get_document(callback_data['id'])
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard)
+    await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('document', 'id', 'action').filter(), state=AdminStatesGroup.document)
+async def get_back_document_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await AdminStatesGroup.documents.set()
+        text, keyboard = Keyboards.get_documents(callback_data['id'])
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+
 ###################################################################REGISTER_HANDLERS##################################################################################
 
 def register_handlers(dispatcher: Dispatcher):
@@ -795,3 +840,6 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(user_info_callback_query)
     dispatcher.register_callback_query_handler(add_balance_user_callback_query)
     dispatcher.register_message_handler(document_types_callback_query_admin)
+    dispatcher.register_callback_query_handler(get_documents_callback_query)
+    dispatcher.register_callback_query_handler(get_document_callback_query)
+    dispatcher.register_callback_query_handler(get_back_document_callback_query)

@@ -159,6 +159,7 @@ async def add_balance_message(message: types.Message):
     if message.text.isdigit():
         await AdminStatesGroup.add_balance.set()
         db.update_balance(sum=message.text, user_id=Users.id)
+        Keyboards.get_insert_documents_add_balance(message.from_user.id, int(message.text))
         text, keyboard = Keyboards.get_user_inf(user_id=Users.id)
         await message.answer(text=text,
                              reply_markup=keyboard,

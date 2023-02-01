@@ -242,6 +242,18 @@ class DataBase:
         self.conn.commit()
 
 
+    def insert_documents_add_balance(self, **kwargs):
+        self.cursor.execute(f'INSERT INTO documents(user_id, product_id, doc_type_id, invoice_date, `count`, cost, invoice_number)'
+                            f' VALUES ({kwargs["admin_user_id"]}, {kwargs["user_id"]}, 3, {kwargs["invoice_date"]}, 0, {kwargs["add_balance_sum"]}, {kwargs["invoice_number"]})')
+        self.conn.commit()
+
+
+    def get_doc_type_id(self, **kwargs):
+        self.cursor.execute(f'SELECT doc_type_id FROM documents WHERE id = {kwargs["doc_id"]}')
+        doc_type_id = self.cursor.fetchall()[0][0]
+        return doc_type_id
+
+
 #######################################################################DB-OBJECT###################################################################################
 
 db = DataBase()

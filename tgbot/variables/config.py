@@ -19,3 +19,8 @@ class Products:
 class Users:
 
     id = ''
+
+
+class MainPage:
+
+    entries = 10
