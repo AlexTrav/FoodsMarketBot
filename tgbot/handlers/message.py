@@ -8,7 +8,7 @@ from tgbot.classes.keyboards import Keyboards
 
 from aiogram.dispatcher import FSMContext
 
-from tgbot.variables.config import Users
+from tgbot.variables.config import Users, MainPage
 
 
 #######################################################################USER#########################################################################################
@@ -42,6 +42,7 @@ async def search_results_message(message: types.Message, state: FSMContext) -> N
     await message.delete()
     async with state.proxy() as data:
         data['search_query'] = message.text
+    MainPage.entries = 10
     text, keyboard = Keyboards.get_search_products(search_query=message.text)
     await message.answer(text=text,
                          reply_markup=keyboard)
@@ -54,6 +55,7 @@ async def search_results_message(message: types.Message, state: FSMContext) -> N
     async with state.proxy() as data:
         data['back_id'] = 1
         data['search_query'] = message.text
+    MainPage.entries = 10
     text, keyboard = Keyboards.get_search_products(search_query=message.text)
     await message.answer(text=text,
                          reply_markup=keyboard)

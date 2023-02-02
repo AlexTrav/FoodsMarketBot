@@ -82,7 +82,7 @@ class Keyboards:
     @staticmethod
     def get_product_subcatalog(category_id: int) -> InlineKeyboardMarkup:
         cb = CallbackData('subcategories', 'id', 'action')
-        product_subcatalog_ikm = InlineKeyboardMarkup(row_width=3)
+        product_subcatalog_ikm = InlineKeyboardMarkup(row_width=2)
         buttons = []
         for subcategory in db.get_data(table='subcategories_products'):
             if subcategory[1] == int(category_id):
@@ -93,14 +93,26 @@ class Keyboards:
     @staticmethod
     def get_products(subcategory_id: int) -> InlineKeyboardMarkup:
         cb = CallbackData('products', 'id', 'action')
-        products_ikm = InlineKeyboardMarkup(row_width=3)
+        products_ikm = InlineKeyboardMarkup(row_width=1)
         buttons = []
-        for product in db.get_data(table='products'):
-            if product[1] == int(subcategory_id):
+        products = db.get_data(table='products', where=1, operand1='subcategory_id', operand2=subcategory_id)
+        if len(products) > 10:
+            if MainPage.entries != 10:
+                products_ikm.add(InlineKeyboardButton(text='↑', callback_data=cb.new(id=subcategory_id, action='up_page')))
+            for product in products[MainPage.entries - 10:MainPage.entries]:
                 if product[8] > 0:
                     buttons.append(InlineKeyboardButton(text=product[2], callback_data=cb.new(id=product[0], action='products')))
-        products_ikm.add(*buttons).add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+            products_ikm.add(*buttons)
+            if MainPage.entries < len(products):
+                products_ikm.add(InlineKeyboardButton(text='↓', callback_data=cb.new(id=subcategory_id, action='down_page')))
+        else:
+            for product in products:
+                if product[8] > 0:
+                    buttons.append(InlineKeyboardButton(text=product[2], callback_data=cb.new(id=product[0], action='products')))
+            products_ikm.add(*buttons)
+        products_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
         return products_ikm
+
 
     @staticmethod
     def get_product(product_id: int, user_id: int, states_previous=None, back_id=None) -> tuple:
@@ -203,10 +215,27 @@ class Keyboards:
     @staticmethod
     def get_orders(user_id: int) -> InlineKeyboardMarkup:
         orders = db.get_data(table='orders', where=1, operand1='user_id', operand2=user_id)
-        if len(orders) <= 33:
-            cb = CallbackData('orders', 'id', 'action')
-            orders_ikm = InlineKeyboardMarkup(row_width=3)
-            buttons = []
+        cb = CallbackData('orders', 'id', 'action')
+        orders_ikm = InlineKeyboardMarkup(row_width=3)
+        buttons = []
+        if len(orders) > 10:
+            if MainPage.entries != 10:
+                orders_ikm.add(InlineKeyboardButton(text='↑', callback_data=cb.new(id=user_id, action='up_page')))
+            for entry in orders[MainPage.entries - 10:MainPage.entries]:
+                res_date = str(entry[2])[6:8] + '.' + str(entry[2])[4:6] + ' ' + str(entry[2])[8:10] + ':' + str(entry[2])[10:12]
+                buttons.append(InlineKeyboardButton(text=f'{res_date}', callback_data=cb.new(id=entry[0], action='order_item')))
+                if entry[3] == 0:
+                    buttons.append(InlineKeyboardButton(text='Не оплачен', callback_data=cb.new(id=-2, action='is_paid')))
+                else:
+                    buttons.append(InlineKeyboardButton(text='Оплачен', callback_data=cb.new(id=-2, action='is_paid')))
+                if entry[4] == 0:
+                    buttons.append(InlineKeyboardButton(text='Не доставлен', callback_data=cb.new(id=-2, action='is_delivered')))
+                else:
+                    buttons.append(InlineKeyboardButton(text='Доставлен', callback_data=cb.new(id=-2, action='is_delivered')))
+            orders_ikm.add(*buttons)
+            if MainPage.entries < len(orders):
+                orders_ikm.add(InlineKeyboardButton(text='↓', callback_data=cb.new(id=user_id, action='down_page')))
+        else:
             for entry in orders:
                 res_date = str(entry[2])[6:8] + '.' + str(entry[2])[4:6] + ' ' + str(entry[2])[8:10] + ':' + str(entry[2])[10:12]
                 buttons.append(InlineKeyboardButton(text=f'{res_date}', callback_data=cb.new(id=entry[0], action='order_item')))
@@ -218,9 +247,9 @@ class Keyboards:
                     buttons.append(InlineKeyboardButton(text='Не доставлен', callback_data=cb.new(id=-2, action='is_delivered')))
                 else:
                     buttons.append(InlineKeyboardButton(text='Доставлен', callback_data=cb.new(id=-2, action='is_delivered')))
-            buttons.append(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
             orders_ikm.add(*buttons)
-            return orders_ikm
+        orders_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+        return orders_ikm
 
     @staticmethod
     def get_order_item(order_id: int) -> tuple:
@@ -305,17 +334,26 @@ class Keyboards:
         cb = CallbackData('search_answer', 'id', 'action')
         search_products = db.get_search_answer(search_query=search_query)
         if len(search_products) > 0:
-            if len(search_products) >= 60:
-                text = 'Найдено 60 записей:'
-            else:
-                text = f'Найдено {len(search_products)} записей:'
-            search_answer_ikm = InlineKeyboardMarkup(row_width=3)
+            text = f'Найдено {len(search_products)} записей:'
+            search_answer_ikm = InlineKeyboardMarkup(row_width=1)
             buttons = []
-            for product in search_products:
-                if len(buttons) == 60:
-                    break
-                buttons.append(InlineKeyboardButton(text=product[2], callback_data=cb.new(id=product[0], action='search_product')))
-            search_answer_ikm.add(*buttons).add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+            if len(search_products) > 10:
+                if MainPage.entries != 10:
+                    search_answer_ikm.add(InlineKeyboardButton(text='↑', callback_data=cb.new(id=search_query, action='up_page')))
+                for product in search_products[MainPage.entries - 10:MainPage.entries]:
+                    if len(buttons) == 60:
+                        break
+                    buttons.append(InlineKeyboardButton(text=product[2], callback_data=cb.new(id=product[0], action='search_product')))
+                search_answer_ikm.add(*buttons)
+                if MainPage.entries < len(search_products):
+                    search_answer_ikm.add(InlineKeyboardButton(text='↓', callback_data=cb.new(id=search_query, action='down_page')))
+            else:
+                for product in search_products:
+                    if len(buttons) == 60:
+                        break
+                    buttons.append(InlineKeyboardButton(text=product[2], callback_data=cb.new(id=product[0], action='search_product')))
+                search_answer_ikm.add(*buttons)
+            search_answer_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
         else:
             text = 'К сожалению записей не найдено'
             search_answer_ikm = InlineKeyboardMarkup(row_width=3, inline_keyboard=[
@@ -420,7 +458,6 @@ class Keyboards:
     @staticmethod
     def set_new_price(new_price: int) -> None:
         Documents.new_price = new_price
-
 
     @staticmethod
     def saving_the_operator_work(product_id: int, user_id: int) -> str:
