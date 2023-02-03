@@ -166,12 +166,20 @@ class DataBase:
 
 
     def product_change_count(self, **kwargs):
-        self.cursor.execute(f'UPDATE products SET `count` = `count` + {kwargs["new_count"]}  WHERE id = {kwargs["product_id"]}')
+        if 'arrival_product' in kwargs:
+            self.cursor.execute(f'UPDATE products SET `count` = `count` + {kwargs["new_count"]}  WHERE id = {kwargs["product_id"]}')
+        if 'write_off_product' in kwargs:
+            self.cursor.execute(f'UPDATE products SET `count` = `count` - {kwargs["write_off_count"]}  WHERE id = {kwargs["product_id"]}')
         self.conn.commit()
 
     def insert_documents(self, **kwargs):
-        self.cursor.execute(f'INSERT INTO documents(user_id, product_id, invoice_date, `count`, cost, invoice_number)'
-                            f' VALUES ({kwargs["user_id"]}, {kwargs["product_id"]}, {kwargs["invoice_date"]}, {kwargs["count"]}, {kwargs["cost"]}, {kwargs["invoice_number"]})')
+        if 'arrival_product' in kwargs:
+            self.cursor.execute(f'INSERT INTO documents(user_id, product_id, invoice_date, `count`, cost, invoice_number)'
+                                f' VALUES ({kwargs["user_id"]}, {kwargs["product_id"]}, {kwargs["invoice_date"]}, {kwargs["count"]}, {kwargs["cost"]}, {kwargs["invoice_number"]})')
+        if 'write_off_product' in kwargs:
+            self.cursor.execute(f'INSERT INTO documents(user_id, product_id, doc_type_id, invoice_date, `count`, cost, invoice_number)'
+                                f' VALUES ({kwargs["user_id"]}, {kwargs["product_id"]}, 2, {kwargs["invoice_date"]}, {kwargs["count"]}, {kwargs["cost"]}, {kwargs["invoice_number"]})')
+
         self.conn.commit()
 
     def get_unique_subcategories_ids(self):

@@ -391,47 +391,69 @@ class Keyboards:
         cb = CallbackData('working_warehouse', 'action')
         working_warehouse_ikm = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text='Добавить товар', callback_data=cb.new(action='add_product'))],
-            [InlineKeyboardButton(text='Поиск по коду', callback_data=cb.new(action='search_id'))],
-            [InlineKeyboardButton(text='Глобальный поиск', callback_data=cb.new(action='search'))],
+            [InlineKeyboardButton(text='Прибытие товара', callback_data=cb.new(action='arrival_product'))],
+            [InlineKeyboardButton(text='Списание товара', callback_data=cb.new(action='write_off_product'))],
             [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
         ])
         text = 'Выберите одно из действий:'
         return text, working_warehouse_ikm
 
     @staticmethod
-    def get_product_operator(product_id: int) -> tuple:
-        cb = CallbackData('product', 'id', 'action')
-        for product in db.get_data(table='products'):
-            if product[0] == int(product_id):
-                text = f'Код товара: {product[0]} \n'
-                text += f'Название: {product[2]}. \n'
-                if product[3] != '':
-                    text += f'Производитель: {product[3]}. \n'
-                if product[4] != '':
-                    text += f'Брэнд: {product[4]}. \n'
-                if product[5] != '':
-                    text += f'Описание: {product[5]} \n'
-                text += f'Цена: {product[6]}₸. \n'
-                text += f'Количество на складе: {product[8]}. \n'
-                photo = product[7]
-                text += f'Добавленное количество: {Documents.new_count}. \n'
-                if Documents.new_price.isdigit():
-                    text += f'Новая цена: {Documents.new_price}₸. \n'
-                else:
-                    text += f'Новая цена: \n'
-                product_ikm = InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text='Сохранить', callback_data=cb.new(id=product[0], action='save'))],
-                    [InlineKeyboardButton(text='-', callback_data=cb.new(id=product[0], action='dec_count_product')),
-                     InlineKeyboardButton(text=Documents.new_count, callback_data=cb.new(id=0, action='count_product')),
-                     InlineKeyboardButton(text='+', callback_data=cb.new(id=product[0], action='inc_count_product'))],
-                    [InlineKeyboardButton(text='Изменить цену', callback_data=cb.new(id=product[0], action='change_price'))],
-                    [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
-                ])
-                return text, product_ikm, photo
-        return ()
+    def get_search_working_warehouse() -> tuple:
+        cb = CallbackData('search_working_warehouse', 'action')
+        search_working_warehouse_ikm = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text='Поиск по коду', callback_data=cb.new(action='search_id'))],
+            [InlineKeyboardButton(text='Глобальный поиск', callback_data=cb.new(action='search'))],
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
+        ])
+        text = 'Выберите одно из действий:'
+        return text, search_working_warehouse_ikm
 
     @staticmethod
-    def get_answer_operator(state: str) -> str:
+    def get_product_operator(product_id: int, state: str) -> tuple:
+        product = db.get_data(table='products', where=1, operand1='id', operand2=product_id)[0]
+        text = f'Код товара: {product[0]} \n'
+        text += f'Название: {product[2]}. \n'
+        if product[3] != '':
+            text += f'Производитель: {product[3]}. \n'
+        if product[4] != '':
+            text += f'Брэнд: {product[4]}. \n'
+        if product[5] != '':
+            text += f'Описание: {product[5]} \n'
+        text += f'Цена: {product[6]}₸. \n'
+        text += f'Количество на складе: {product[8]}. \n'
+        photo = product[7]
+        if state == 'arrival_product':
+            cb = CallbackData('arrival_product', 'id', 'action')
+            text += f'Добавленное количество: {Documents.new_count}. \n'
+            if Documents.new_price.isdigit():
+                text += f'Новая цена: {Documents.new_price}₸. \n'
+            else:
+                text += f'Новая цена: \n'
+            product_ikm = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text='Сохранить', callback_data=cb.new(id=product[0], action='save'))],
+                [InlineKeyboardButton(text='-', callback_data=cb.new(id=product[0], action='dec_count_product')),
+                InlineKeyboardButton(text=Documents.new_count, callback_data=cb.new(id=0, action='count_product')),
+                InlineKeyboardButton(text='+', callback_data=cb.new(id=product[0], action='inc_count_product'))],
+                [InlineKeyboardButton(text='Изменить цену', callback_data=cb.new(id=product[0], action='change_price'))],
+                [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
+            ])
+            return text, product_ikm, photo
+        elif state == 'write_off_product':
+            cb = CallbackData('write_off_product', 'id', 'action')
+            text += f'Количество списанного: {Documents.write_off_count}. \n'
+            product_ikm = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text='-', callback_data=cb.new(id=product[0], action='dec_count_product')),
+                InlineKeyboardButton(text=Documents.write_off_count, callback_data=cb.new(id=0, action='count_product')),
+                InlineKeyboardButton(text='+', callback_data=cb.new(id=product[0], action='inc_count_product'))],
+                [InlineKeyboardButton(text='Списать', callback_data=cb.new(id=product[0], action='write_off'))],
+                [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
+            ])
+            return text, product_ikm, photo
+
+
+    @staticmethod
+    def get_answer_operator_arrival_product(state: str) -> str:
         answer = ''
         if state == 'dec_count_product':
             if Documents.new_count == 0:
@@ -444,6 +466,19 @@ class Keyboards:
             answer = 'Количетсво увеличено на 1'
         return answer
 
+    @staticmethod
+    def get_answer_operator_write_off_product(state: str) -> str:
+        answer = ''
+        if state == 'dec_count_product':
+            if Documents.write_off_count == 0:
+                answer = 'Количество списанного не может быть меньше 0'
+            else:
+                Documents.write_off_count -= 1
+                answer = 'Количетсво уменьшено на 1'
+        elif state == 'inc_count_product':
+            Documents.write_off_count += 1
+            answer = 'Количетсво увеличено на 1'
+        return answer
 
     @staticmethod
     def get_change_price_product() -> tuple:
@@ -470,11 +505,27 @@ class Keyboards:
             db.product_change_price(new_price=Documents.new_price, product_id=product_id)
         else:
             cost = db.get_data(get_name_product=1, field1='cost', operand1=product_id)[0][0]
-        db.product_change_count(new_count=Documents.new_count, product_id=product_id)
-        db.insert_documents(user_id=user_id, product_id=product_id, invoice_date=invoice_date, count=Documents.new_count, cost=cost, invoice_number=invoice_number)
+        db.product_change_count(new_count=Documents.new_count, product_id=product_id, arrival_product=1)
+        db.insert_documents(arrival_product=1, user_id=user_id, product_id=product_id, invoice_date=invoice_date, count=Documents.new_count, cost=cost, invoice_number=invoice_number)
         Documents.new_count = 0
         Documents.new_price = ''
         return 'Успешно'
+
+    @staticmethod
+    def write_off_product_work(product_id: int, user_id: int) -> str:
+        count_product = db.get_data(get_name_product=1, field1='count', operand1=product_id)[0][0]
+        if Documents.write_off_count > count_product:
+            return 'Нельзя списать, больше чем есть на складе!'
+        if Documents.write_off_count == 0:
+            return 'Чтобы списать, измените что нибудь!'
+        invoice_number = random.randint(1000000, 9999999)
+        invoice_date = datetime.now().strftime("%Y%m%d%H%M")
+        cost = db.get_data(get_name_product=1, field1='cost', operand1=product_id)[0][0]
+        db.product_change_count(write_off_count=Documents.write_off_count, product_id=product_id, write_off_product=1)
+        db.insert_documents(write_off_product=1, user_id=user_id, product_id=product_id, invoice_date=invoice_date, count=Documents.write_off_count, cost=cost, invoice_number=invoice_number)
+        Documents.write_off_count = 0
+        return 'Успешно'
+
 
     @staticmethod
     def get_search_id() -> tuple:
@@ -753,7 +804,13 @@ class Keyboards:
             text += f'Добавлено количества: {document[5]}' + '\n'
             text += f'По цене: {document[6]}' + '\n'
         elif doc_type_id == 2:
-            pass
+            product_name = db.get_data(get_name_product=1, field1='name', operand1=document[2])[0][0]
+            text = f'Расходная накладная: №{document[7]}' + '\n'
+            text += f'Дата: {res_date}' + '\n'
+            text += f'Выполненно: {document[1]}' + '\n'
+            text += f'Продукт: {product_name}' + '\n'
+            text += f'Количество списанного: {document[5]}' + '\n'
+            text += f'По цене: {document[6]}' + '\n'
         elif doc_type_id == 3:
             text = f'Пополнение баланса пользователя: №{document[7]}' + '\n'
             text += f'Дата: {res_date}' + '\n'

@@ -10,6 +10,8 @@ class Documents:
     new_count = 0
     new_price = ''
 
+    write_off_count = 0
+
 
 class Products:
 

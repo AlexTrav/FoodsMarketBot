@@ -82,7 +82,7 @@ async def change_price_product_message(message: types.Message, state: FSMContext
             await OperatorStatesGroup.product.set()
             Keyboards.set_new_price(message.text)
             await message.delete()
-            text, keyboard, photo = Keyboards.get_product_operator(product_id=data['product_id'])
+            text, keyboard, photo = Keyboards.get_product_operator(product_id=data['product_id'], state=OperatorStatesGroup.state)
             await message.answer_photo(photo=photo,
                                        caption=text,
                                        reply_markup=keyboard)

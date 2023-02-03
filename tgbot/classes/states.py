@@ -21,6 +21,7 @@ class UserStatesGroup(StatesGroup):
 
 
 class OperatorStatesGroup(StatesGroup):
+    state = ''
     start = State()
     working_warehouse = State()
     search = State()

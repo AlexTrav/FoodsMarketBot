@@ -234,7 +234,7 @@ async def edit_basket_callback_query(callback: types.CallbackQuery, callback_dat
             await callback.message.edit_text(text=text,
                                              reply_markup=keyboard)
             await callback.answer(text=answer)
-        elif callback_data['action'] == '':
+        else:
             await callback.answer(text='Количетсво товара:')
 
     await callback.answer()
@@ -454,6 +454,23 @@ async def operator_functions_callback_query(callback: types.CallbackQuery, callb
             await callback.message.edit_text(text=text,
                                              reply_markup=keyboard,
                                              parse_mode='HTML')
+        if callback_data['action'] == 'arrival_product' or callback_data['action'] == 'write_off_product':
+            OperatorStatesGroup.state = callback_data['action']
+            text, keyboard = Keyboards.get_search_working_warehouse()
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard)
+    await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('search_working_warehouse', 'action').filter(), state='*')
+async def search_working_warehouse_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        OperatorStatesGroup.state = ''
+        await OperatorStatesGroup.working_warehouse.set()
+        text, keyboard = Keyboards.get_working_warehouse()
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+    else:
         if callback_data['action'] == 'search_id':
             await OperatorStatesGroup.search_id.set()
             text, keyboard = Keyboards.get_search_id()
@@ -465,7 +482,6 @@ async def operator_functions_callback_query(callback: types.CallbackQuery, callb
             text, keyboard = Keyboards.get_search()
             await callback.message.edit_text(text=text,
                                              reply_markup=keyboard)
-            await callback.answer()
     await callback.answer()
 
 
@@ -474,8 +490,7 @@ async def operator_back_search_callback_query(callback: types.CallbackQuery, cal
     if callback_data['action'] == 'delete':
         await callback.message.delete()
     else:
-        await OperatorStatesGroup.working_warehouse.set()
-        text, keyboard = Keyboards.get_working_warehouse()
+        text, keyboard = Keyboards.get_search_working_warehouse()
         await callback.message.edit_text(text=text,
                                          reply_markup=keyboard)
         await callback.answer()
@@ -486,8 +501,7 @@ async def operator_back_search_id_callback_query(callback: types.CallbackQuery, 
     if callback_data['action'] == 'delete':
         await callback.message.delete()
     else:
-        await OperatorStatesGroup.working_warehouse.set()
-        text, keyboard = Keyboards.get_working_warehouse()
+        text, keyboard = Keyboards.get_search_working_warehouse()
         await callback.message.edit_text(text=text,
                                          reply_markup=keyboard)
         await callback.answer()
@@ -508,7 +522,7 @@ async def operator_search_answer_callback_query(callback: types.CallbackQuery, c
         if callback_data['action'] == 'search_product':
             await callback.message.delete()
             await OperatorStatesGroup.product.set()
-            text, keyboard, photo = Keyboards.get_product_operator(product_id=callback_data['id'])
+            text, keyboard, photo = Keyboards.get_product_operator(product_id=callback_data['id'], state=OperatorStatesGroup.state)
             await callback.message.answer_photo(photo=photo,
                                                 caption=text,
                                                 reply_markup=keyboard)
@@ -525,15 +539,15 @@ async def operator_search_id_answer_callback_query(callback: types.CallbackQuery
         if callback_data['action'] == 'search_product':
             await callback.message.delete()
             await OperatorStatesGroup.product.set()
-            text, keyboard, photo = Keyboards.get_product_operator(product_id=callback_data['id'])
+            text, keyboard, photo = Keyboards.get_product_operator(product_id=callback_data['id'], state=OperatorStatesGroup.state)
             await callback.message.answer_photo(photo=photo,
                                                 caption=text,
                                                 reply_markup=keyboard)
     await callback.answer()
 
 
-@dp.callback_query_handler(CallbackData('product', 'id', 'action').filter(), state=OperatorStatesGroup.product)
-async def change_product_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+@dp.callback_query_handler(CallbackData('arrival_product', 'id', 'action').filter(), state=OperatorStatesGroup.product)
+async def arrival_product_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
         await OperatorStatesGroup.search.set()
         await callback.message.delete()
@@ -548,9 +562,9 @@ async def change_product_callback_query(callback: types.CallbackQuery, callback_
                                               reply_markup=keyboard)
     else:
         if callback_data['action'] == 'dec_count_product' or callback_data['action'] == 'inc_count_product':
-            answer = Keyboards.get_answer_operator(callback_data['action'])
+            answer = Keyboards.get_answer_operator_arrival_product(callback_data['action'])
             if answer != 'Добавленное количество не может быть меньше 0':
-                text, keyboard, photo = Keyboards.get_product_operator(product_id=callback_data['id'])
+                text, keyboard, photo = Keyboards.get_product_operator(product_id=callback_data['id'], state=OperatorStatesGroup.state)
                 await callback.message.edit_media(InputMedia(media=photo, caption=text), reply_markup=keyboard)
             await callback.answer(answer)
         if callback_data['action'] == 'count_product':
@@ -566,7 +580,38 @@ async def change_product_callback_query(callback: types.CallbackQuery, callback_
         if callback_data['action'] == 'save':
             answer = Keyboards.saving_the_operator_work(callback_data['id'], callback.from_user.id)
             if answer != 'Чтобы сохранить, измените что нибудь!':
-                text, keyboard, photo = Keyboards.get_product_operator(product_id=callback_data['id'])
+                text, keyboard, photo = Keyboards.get_product_operator(product_id=callback_data['id'], state=OperatorStatesGroup.state)
+                await callback.message.edit_media(InputMedia(media=photo, caption=text), reply_markup=keyboard)
+            await callback.answer(answer)
+
+
+@dp.callback_query_handler(CallbackData('write_off_product', 'id', 'action').filter(), state=OperatorStatesGroup.product)
+async def write_off_product_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await OperatorStatesGroup.search.set()
+        await callback.message.delete()
+        async with state.proxy() as data:
+            if data['back_id'] == 1:
+                text, keyboard = Keyboards.get_search_products(search_query=data['search_query'])
+                await callback.message.answer(text=text,
+                                              reply_markup=keyboard)
+            else:
+                text, keyboard = Keyboards.get_search_id_product(search_id=data['search_id'])
+                await callback.message.answer(text=text,
+                                              reply_markup=keyboard)
+    else:
+        if callback_data['action'] == 'dec_count_product' or callback_data['action'] == 'inc_count_product':
+            answer = Keyboards.get_answer_operator_write_off_product(callback_data['action'])
+            if answer != 'Количество списанного не может быть меньше 0':
+                text, keyboard, photo = Keyboards.get_product_operator(product_id=callback_data['id'], state=OperatorStatesGroup.state)
+                await callback.message.edit_media(InputMedia(media=photo, caption=text), reply_markup=keyboard)
+            await callback.answer(answer)
+        if callback_data['action'] == 'count_product':
+            await callback.answer('Количество добавленного товара:')
+        if callback_data['action'] == 'write_off':
+            answer = Keyboards.write_off_product_work(callback_data['id'], callback.from_user.id)
+            if answer != 'Чтобы списать, измените что нибудь!' and answer != 'Нельзя списать, больше чем есть на складе!':
+                text, keyboard, photo = Keyboards.get_product_operator(product_id=callback_data['id'], state=OperatorStatesGroup.state)
                 await callback.message.edit_media(InputMedia(media=photo, caption=text), reply_markup=keyboard)
             await callback.answer(answer)
 
@@ -580,7 +625,7 @@ async def operator_back_product_callback_query(callback: types.CallbackQuery, ca
         await callback.message.delete()
         await OperatorStatesGroup.product.set()
         async with state.proxy() as data:
-            text, keyboard, photo = Keyboards.get_product_operator(product_id=data['product_id'])
+            text, keyboard, photo = Keyboards.get_product_operator(product_id=data['product_id'], state=OperatorStatesGroup.state)
         await callback.message.answer_photo(photo=photo,
                                             caption=text,
                                             reply_markup=keyboard)
@@ -840,11 +885,13 @@ def register_handlers(dispatcher: Dispatcher):
     ##################################OPERATOR################################
     dispatcher.register_callback_query_handler(working_warehouse_callback_query)
     dispatcher.register_callback_query_handler(operator_functions_callback_query)
+    dispatcher.register_callback_query_handler(search_working_warehouse_callback_query)
     dispatcher.register_callback_query_handler(operator_back_search_callback_query)
     dispatcher.register_callback_query_handler(operator_back_search_id_callback_query)
     dispatcher.register_callback_query_handler(operator_search_answer_callback_query)
     dispatcher.register_callback_query_handler(operator_search_id_answer_callback_query)
-    dispatcher.register_callback_query_handler(change_product_callback_query)
+    dispatcher.register_callback_query_handler(arrival_product_callback_query)
+    dispatcher.register_callback_query_handler(write_off_product_callback_query)
     dispatcher.register_callback_query_handler(operator_back_product_callback_query)
     dispatcher.register_callback_query_handler(add_product_msg_callback_query)
     dispatcher.register_callback_query_handler(select_category_callback_query)
