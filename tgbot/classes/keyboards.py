@@ -36,9 +36,14 @@ class Keyboards:
 
     @staticmethod
     def add_balance_user(user_id: int) -> str:
-        db.check_user(user_id=user_id)
-        db.add_balance(user_id=user_id)
-        text = f"Ваш баланс пополнен на 10000₸"
+        if not db.get_document_user(user_id=user_id):
+            invoice_number = random.randint(1000000, 9999999)
+            invoice_date = datetime.now().strftime("%Y%m%d%H%M")
+            db.check_user(user_id=user_id)
+            db.add_balance(user_id=user_id, invoice_date=invoice_date, invoice_number=invoice_number)
+            text = f"Запрос на пополнение баланса, отправлен. С вами свяжится админ!"
+        else:
+            text = f"Запрос на пополнение баланса уже есть! Ожидайте!"
         return text
 
     @staticmethod
@@ -214,7 +219,7 @@ class Keyboards:
 
     @staticmethod
     def get_orders(user_id: int) -> InlineKeyboardMarkup:
-        orders = db.get_data(table='orders', where=1, operand1='user_id', operand2=user_id)
+        orders = db.get_data(table='orders', where=1, order_by=1, operand1='user_id', operand2=user_id, operand3='id')
         cb = CallbackData('orders', 'id', 'action')
         orders_ikm = InlineKeyboardMarkup(row_width=3)
         buttons = []
@@ -289,7 +294,7 @@ class Keyboards:
         user = db.get_data(table='users', where=1, operand1='id', operand2=user_id)[0]
         my_profile_ikm = InlineKeyboardMarkup(row_width=1)
         text = f'<b>Ваш баланс</b>: {user[1]}₸' + '\n'
-        # my_profile_ikm.add(InlineKeyboardButton(text='Пополнить баланс', callback_data=cb.new(action='add_balance')))
+        my_profile_ikm.add(InlineKeyboardButton(text='Пополнить баланс', callback_data=cb.new(action='add_balance')))
         if user[2] is None:
             text += f'<b>Ваш адрес</b>: Не указан' + '\n'
             my_profile_ikm.add(InlineKeyboardButton(text='Указать адрес', callback_data=cb.new(action='set_address')))
@@ -722,6 +727,8 @@ class Keyboards:
             text += f'Телефон: Не указан' + '\n'
         else:
             text += f'Телефон {user[3]}' + '\n'
+        link = f"https://t.me/{user[5]}"
+        text += f'Ссылка на пользователя: {link}'
         user_profile_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
         return text, user_profile_ikm
 
@@ -754,10 +761,14 @@ class Keyboards:
         db.insert_documents_add_balance(admin_user_id=admin_user_id, user_id=Users.id, invoice_date=invoice_date, add_balance_sum=add_balance_sum, invoice_number=invoice_number)
 
     @staticmethod
+    def get_update_documents_add_balance(admin_user_id: int, add_balance_sum: int, doc_id: int) -> None:
+        db.update_documents_add_balance(admin_user_id=admin_user_id, add_balance_sum=add_balance_sum, doc_id=doc_id)
+
+    @staticmethod
     def get_documents(doc_type_id: int) -> tuple:
         cb = CallbackData('document', 'id', 'action')
         text = 'Выберите документ:'
-        documents = db.get_data(table='documents', where=1, operand1='doc_type_id', operand2=doc_type_id)
+        documents = db.get_data(table='documents', where=1, order_by=1, operand1='doc_type_id', operand2=doc_type_id, operand3='id')
         documents_type_ikm = InlineKeyboardMarkup(row_width=1)
         buttons = []
         if len(documents) > 10:
@@ -788,10 +799,8 @@ class Keyboards:
     def get_document(doc_id: int) -> tuple:
         cb = CallbackData('document', 'id', 'action')
         doc_type_id = db.get_doc_type_id(doc_id=doc_id)
-        document_type_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
-            [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=doc_type_id, action='back'))]
-        ])
         document = db.get_data(table='documents', where=1, operand1='id', operand2=doc_id)[0]
+        document_type_ikm = InlineKeyboardMarkup(row_width=1)
         res_date = str(document[4])[6:8] + '.' + str(document[4])[4:6] + '.' + str(document[4])[2:4] + ' ' + str(
             document[4])[8:10] + ':' + str(document[4])[10:12]
         text = ''
@@ -817,4 +826,13 @@ class Keyboards:
             text += f'Выполненно: {document[1]}' + '\n'
             text += f'Пользователю: {document[2]}' + '\n'
             text += f'Начислено: {document[6]}' + '\n'
+        elif doc_type_id == 4:
+            text = f'Запрос на пополнение баланса пользователя: №{document[7]}' + '\n'
+            text += f'Дата отправки запроса: {res_date}' + '\n'
+            text += f'Пользователю: {document[2]}' + '\n'
+            user = db.get_data(table='users', where=1, operand1='id', operand2=document[2])[0]
+            link = f"https://t.me/{user[5]}"
+            text += f'Ссылка на пользователя: {link}'
+            document_type_ikm.add(InlineKeyboardButton(text='Выполнить', callback_data=cb.new(id=document[2], action='add_balance')))
+        document_type_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=doc_type_id, action='back')))
         return text, document_type_ikm

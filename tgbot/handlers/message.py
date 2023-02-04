@@ -157,15 +157,23 @@ async def add_user_id_message(message: types.Message):
 
 
 @dp.message_handler(content_types=['text'], state=AdminStatesGroup.add_balance_user)
-async def add_balance_message(message: types.Message):
+async def add_balance_message(message: types.Message, state: FSMContext):
     if message.text.isdigit():
         await AdminStatesGroup.add_balance.set()
         db.update_balance(sum=message.text, user_id=Users.id)
-        Keyboards.get_insert_documents_add_balance(message.from_user.id, int(message.text))
-        text, keyboard = Keyboards.get_user_inf(user_id=Users.id)
-        await message.answer(text=text,
-                             reply_markup=keyboard,
-                             parse_mode='HTML')
+        async with state.proxy() as data:
+            if data['back_id'] == 2:
+                await AdminStatesGroup.document.set()
+                Keyboards.get_update_documents_add_balance(message.from_user.id, int(message.text), data['document_id'])
+                text, keyboard = Keyboards.get_document(data['document_id'])
+                await message.answer(text=text,
+                                        reply_markup=keyboard)
+            else:
+                Keyboards.get_insert_documents_add_balance(message.from_user.id, int(message.text))
+                text, keyboard = Keyboards.get_user_inf(user_id=Users.id)
+                await message.answer(text=text,
+                                     reply_markup=keyboard,
+                                     parse_mode='HTML')
         Users.id = ''
     else:
         await message.answer('Сумма должна быть числом')

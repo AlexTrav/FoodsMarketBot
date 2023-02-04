@@ -295,7 +295,7 @@ async def order_payment_callback_query(callback: types.CallbackQuery, callback_d
                                                      parse_mode='HTML')
                     await callback.answer('Заказ успешно оплачен и отправлен на доставку!')
                 else:
-                    await callback.answer('Адрес доставки не указан, укажите его /set_address')
+                    await callback.answer('Адрес доставки не указан, укажите его в профиле!')
             else:
                 await callback.answer('У вас не достаточно средств!')
         if callback_data['action'] == 'paid_for':
@@ -795,12 +795,14 @@ async def working_roles_user_callback_query(callback: types.CallbackQuery, callb
                                          reply_markup=keyboard)
 
 @dp.callback_query_handler(CallbackData('user_info', 'id', 'action').filter(), state=AdminStatesGroup.add_balance)
-async def user_info_callback_query(callback: types.CallbackQuery, callback_data: dict):
+async def user_info_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
         text, keyboard = Keyboards.set_user_id()
         await callback.message.edit_text(text=text,
                                          reply_markup=keyboard)
     else:
+        async with state.proxy() as data:
+            data['back_id'] = 1
         await AdminStatesGroup.add_balance_user.set()
         text, keyboard = Keyboards.get_add_balance_form(callback_data['id'])
         await callback.message.edit_text(text=text,
@@ -809,14 +811,20 @@ async def user_info_callback_query(callback: types.CallbackQuery, callback_data:
 
 
 @dp.callback_query_handler(CallbackData('back', 'id', 'action').filter(), state=AdminStatesGroup.add_balance_user)
-async def add_balance_user_callback_query(callback: types.CallbackQuery, callback_data: dict):
+async def add_balance_user_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'delete':
         await callback.message.delete()
     else:
-        text, keyboard = Keyboards.get_user_inf(callback_data['id'])
-        await callback.message.edit_text(text=text,
-                                         reply_markup=keyboard,
-                                         parse_mode='HTML')
+        async with state.proxy() as data:
+            if data['back_id'] == 2:
+                text, keyboard = Keyboards.get_document(data['document_id'])
+                await callback.message.edit_text(text=text,
+                                                 reply_markup=keyboard)
+            else:
+                text, keyboard = Keyboards.get_user_inf(callback_data['id'])
+                await callback.message.edit_text(text=text,
+                                                 reply_markup=keyboard,
+                                                 parse_mode='HTML')
 
 
 @dp.callback_query_handler(CallbackData('document_types', 'id', 'action').filter(), state=AdminStatesGroup.documents)
@@ -834,7 +842,7 @@ async def get_documents_callback_query(callback: types.CallbackQuery, callback_d
 
 
 @dp.callback_query_handler(CallbackData('document', 'id', 'action').filter(), state=AdminStatesGroup.documents)
-async def get_document_callback_query(callback: types.CallbackQuery, callback_data: dict):
+async def get_document_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
         text, keyboard = Keyboards.get_document_types()
         await callback.message.edit_text(text=text,
@@ -848,18 +856,28 @@ async def get_document_callback_query(callback: types.CallbackQuery, callback_da
         else:
             await AdminStatesGroup.document.set()
             text, keyboard = Keyboards.get_document(callback_data['id'])
+            async with state.proxy() as data:
+                data['document_id'] = callback_data['id']
             await callback.message.edit_text(text=text,
                                              reply_markup=keyboard)
     await callback.answer()
 
 
 @dp.callback_query_handler(CallbackData('document', 'id', 'action').filter(), state=AdminStatesGroup.document)
-async def get_back_document_callback_query(callback: types.CallbackQuery, callback_data: dict):
+async def get_back_document_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
         await AdminStatesGroup.documents.set()
         text, keyboard = Keyboards.get_documents(callback_data['id'])
         await callback.message.edit_text(text=text,
                                          reply_markup=keyboard)
+    else:
+        if callback_data['action'] == 'add_balance':
+            await AdminStatesGroup.add_balance_user.set()
+            async with state.proxy() as data:
+                data['back_id'] = 2
+            text, keyboard = Keyboards.get_add_balance_form(callback_data['id'])
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard)
 
 ###################################################################REGISTER_HANDLERS##################################################################################
 

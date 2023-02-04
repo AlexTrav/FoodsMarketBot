@@ -10,7 +10,7 @@ from tgbot.db.database import db
 
 @dp.message_handler(commands=['start'], state='*')
 async def start_command(message: types.Message) -> None:
-    db.check_user(user_id=message.from_user.id)
+    db.check_user(user_id=message.from_user.id, user_name=message.from_user.username)
     role_id = db.get_role_id(user_id=message.from_user.id)
     await message.delete()
     ###################################USER###################################

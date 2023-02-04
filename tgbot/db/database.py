@@ -26,7 +26,9 @@ class DataBase:
             return 'Ошибка соединения'
 
     def get_data(self, **kwargs) -> list:
-        if 'where' in kwargs and 'get_name_product' not in kwargs:
+        if 'where' in kwargs and 'order_by' in kwargs:
+            self.cursor.execute(f"SELECT * FROM {kwargs['table']} WHERE {kwargs['operand1']} = {kwargs['operand2']} ORDER BY {kwargs['operand3']} DESC")
+        elif 'where' in kwargs and 'get_name_product' not in kwargs and 'order_by' not in kwargs:
             if kwargs['where'] == 1:
                 self.cursor.execute(f"SELECT * FROM {kwargs['table']} WHERE {kwargs['operand1']} = {kwargs['operand2']}")
             if kwargs['where'] == 2:
@@ -47,13 +49,13 @@ class DataBase:
         self.cursor.execute('SELECT * FROM users')
         users = self.cursor.fetchall()
         if not users:
-            self.cursor.execute(f'INSERT INTO users(id) VALUES ({kwargs["user_id"]})')
+            self.cursor.execute(f'INSERT INTO users(id, user_name) VALUES ({kwargs["user_id"]}, "{kwargs["user_name"]}")')
             self.conn.commit()
         else:
             self.cursor.execute(f'SELECT * FROM users WHERE id = {kwargs["user_id"]}')
             user = self.cursor.fetchall()
             if not user:
-                self.cursor.execute(f'INSERT INTO users(id) VALUES ({kwargs["user_id"]})')
+                self.cursor.execute(f'INSERT INTO users(id, user_name) VALUES ({kwargs["user_id"]}, "{kwargs["user_name"]}")')
                 self.conn.commit()
 
     def check_role(self, **kwargs):
@@ -72,8 +74,14 @@ class DataBase:
             return 'Вас нету в списке работников!'
 
     def add_balance(self, **kwargs):
-        self.cursor.execute(f'UPDATE users SET balance = balance + 10000 WHERE id = {kwargs["user_id"]}')
+        self.cursor.execute(f'INSERT INTO documents(product_id, doc_type_id, invoice_date, `count`, invoice_number) '
+                            f'VALUES ({kwargs["user_id"]}, 4, {kwargs["invoice_date"]}, 0, {kwargs["invoice_number"]})')
         self.conn.commit()
+
+    def get_document_user(self, **kwargs):
+        self.cursor.execute(f'SELECT * FROM documents WHERE user_id IS NULL AND product_id = {kwargs["user_id"]} AND cost IS NULL')
+        document_user = self.cursor.fetchall()
+        return document_user
 
     def check_enough_money(self, **kwargs):
         self.cursor.execute(f'SELECT balance FROM users WHERE id = {kwargs["user_id"]}')
@@ -255,6 +263,9 @@ class DataBase:
                             f' VALUES ({kwargs["admin_user_id"]}, {kwargs["user_id"]}, 3, {kwargs["invoice_date"]}, 0, {kwargs["add_balance_sum"]}, {kwargs["invoice_number"]})')
         self.conn.commit()
 
+    def update_documents_add_balance(self, **kwargs):
+        self.cursor.execute(f'UPDATE documents SET user_id = {kwargs["admin_user_id"]}, cost = {kwargs["add_balance_sum"]}, doc_type_id = 3 WHERE id = {kwargs["doc_id"]}')
+        self.conn.commit()
 
     def get_doc_type_id(self, **kwargs):
         self.cursor.execute(f'SELECT doc_type_id FROM documents WHERE id = {kwargs["doc_id"]}')
