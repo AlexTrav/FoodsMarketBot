@@ -100,7 +100,7 @@ class Keyboards:
         cb = CallbackData('products', 'id', 'action')
         products_ikm = InlineKeyboardMarkup(row_width=1)
         buttons = []
-        products = db.get_data(table='products', where=1, operand1='subcategory_id', operand2=subcategory_id)
+        products = db.get_products(subcategory_id=subcategory_id, state=Products.sorting)
         if len(products) > 10:
             if MainPage.entries != 10:
                 products_ikm.add(InlineKeyboardButton(text='↑', callback_data=cb.new(id=subcategory_id, action='up_page')))
@@ -115,9 +115,50 @@ class Keyboards:
                 if product[8] > 0:
                     buttons.append(InlineKeyboardButton(text=product[2], callback_data=cb.new(id=product[0], action='products')))
             products_ikm.add(*buttons)
+        products_ikm.add(InlineKeyboardButton(text='Сортировка', callback_data=cb.new(id=subcategory_id, action='sorting')))
         products_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
         return products_ikm
 
+    @staticmethod
+    def get_sorting_form(subcategory_id: int) -> tuple:
+        cb = CallbackData('sorting', 'id', 'action')
+        sorting_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
+            [InlineKeyboardButton(text='По умолчанию', callback_data=cb.new(id=subcategory_id, action='default'))],
+            [InlineKeyboardButton(text='По возрастанию цены', callback_data=cb.new(id=subcategory_id, action='cost_asc'))],
+            [InlineKeyboardButton(text='По убыванию цены', callback_data=cb.new(id=subcategory_id, action='cost_desc'))],
+            {InlineKeyboardButton(text='По наименованию', callback_data=cb.new(id=subcategory_id, action='name'))},
+            [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=subcategory_id, action='back'))]
+        ])
+        text = 'Выберите сортировку:'
+        return text, sorting_ikm
+
+    @staticmethod
+    def get_sorting(state: str) -> str:
+        if state == 'default':
+            if Products.sorting == '':
+                answer = 'Сортировка по умолчанию уже выбрана!'
+            else:
+                Products.sorting = ''
+                answer = 'Сортировка по умолчанию выбрана!'
+        elif state == 'cost_asc':
+            if Products.sorting == 'ORDER BY cost ASC':
+                answer = 'Сортировка по возрастанию цены уже выбрана!'
+            else:
+                Products.sorting = 'ORDER BY cost ASC'
+                answer = 'Сортировка по возрастанию выбрана!'
+        elif state == 'cost_desc':
+            if Products.sorting == 'ORDER BY cost DESC':
+                answer = 'Сортировка по убыванию цены уже выбрана!'
+            else:
+                Products.sorting = 'ORDER BY cost DESC'
+                answer = 'Сортировка по убыванию выбрана!'
+        else:
+            if Products.sorting == 'ORDER BY name':
+                answer = 'Сортировка по наименованию уже выбрана!'
+            else:
+                Products.sorting = 'ORDER BY name'
+                answer = 'Сортировка по наименованию выбрана!'
+        return answer
 
     @staticmethod
     def get_product(product_id: int, user_id: int, states_previous=None, back_id=None) -> tuple:

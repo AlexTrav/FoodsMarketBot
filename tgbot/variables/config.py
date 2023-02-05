@@ -17,6 +17,8 @@ class Products:
 
     subcategory_id = ''
 
+    sorting = ''
+
 
 class Users:
 

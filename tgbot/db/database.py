@@ -100,6 +100,10 @@ class DataBase:
         self.cursor.execute(f'UPDATE users SET phone_number = "{kwargs["phone"]}" WHERE id = {kwargs["user_id"]}')
         self.conn.commit()
 
+    def get_products(self, **kwargs):
+        self.cursor.execute(f'SELECT * FROM products WHERE subcategory_id = {kwargs["subcategory_id"]} ' + kwargs['state'])
+        return self.cursor.fetchall()
+
     def working_with_basket(self, **kwargs):
         answer = ''
         count_entries = 0

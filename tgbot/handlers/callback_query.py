@@ -10,7 +10,7 @@ from tgbot.classes.keyboards import Keyboards
 
 from tgbot.db.database import db
 
-from tgbot.variables.config import MainPage
+from tgbot.variables.config import MainPage, Products
 
 
 @dp.callback_query_handler(text='exit', state='*')
@@ -71,6 +71,7 @@ async def products_callback_query(callback: types.CallbackQuery, callback_data: 
             data['product_subcatalog'] = callback_data['id']
         await UserStatesGroup.products.set()
         MainPage.entries = 10
+        Products.sorting = ''
         await callback.message.edit_text(text='Выберите продукт:',
                                          reply_markup=Keyboards.get_products(subcategory_id=callback_data['id']))
     await callback.answer()
@@ -90,6 +91,10 @@ async def product_callback_query(callback: types.CallbackQuery, callback_data: d
             await UserStatesGroup.products.set()
             await callback.message.edit_text(text='Выберите продукт:',
                                              reply_markup=Keyboards.get_products(subcategory_id=callback_data['id']))
+        elif callback_data['action'] == 'sorting':
+            text, keyboard = Keyboards.get_sorting_form(callback_data['id'])
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard)
         else:
             async with state.proxy() as data:
                 data['edit_basket'] = ''
@@ -99,6 +104,19 @@ async def product_callback_query(callback: types.CallbackQuery, callback_data: d
             await callback.message.answer_photo(photo=photo,
                                                 caption=text,
                                                 reply_markup=keyboard)
+    await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('sorting', 'id', 'action').filter(), state=UserStatesGroup.products)
+async def sorting_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await callback.message.edit_text(text='Выберите продукт:',
+                                         reply_markup=Keyboards.get_products(subcategory_id=callback_data['id']))
+    else:
+        answer = Keyboards.get_sorting(state=callback_data['action'])
+        await callback.message.edit_text(text='Выберите продукт:',
+                                         reply_markup=Keyboards.get_products(subcategory_id=callback_data['id']))
+        await callback.answer(answer)
     await callback.answer()
 
 
@@ -900,6 +918,7 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(get_search_callback_query)
     dispatcher.register_callback_query_handler(back_search_callback_query)
     dispatcher.register_callback_query_handler(search_answer_callback_query)
+    dispatcher.register_callback_query_handler(sorting_callback_query)
     ##################################OPERATOR################################
     dispatcher.register_callback_query_handler(working_warehouse_callback_query)
     dispatcher.register_callback_query_handler(operator_functions_callback_query)
