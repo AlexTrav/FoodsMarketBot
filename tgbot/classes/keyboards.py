@@ -139,25 +139,25 @@ class Keyboards:
                 answer = 'Сортировка по умолчанию уже выбрана!'
             else:
                 Products.sorting = ''
-                answer = 'Сортировка по умолчанию выбрана!'
+                answer = 'Выбрана сортировка по умолчанию!'
         elif state == 'cost_asc':
             if Products.sorting == 'ORDER BY cost ASC':
                 answer = 'Сортировка по возрастанию цены уже выбрана!'
             else:
                 Products.sorting = 'ORDER BY cost ASC'
-                answer = 'Сортировка по возрастанию выбрана!'
+                answer = 'Выбрана сортировка по возрастанию!'
         elif state == 'cost_desc':
             if Products.sorting == 'ORDER BY cost DESC':
                 answer = 'Сортировка по убыванию цены уже выбрана!'
             else:
                 Products.sorting = 'ORDER BY cost DESC'
-                answer = 'Сортировка по убыванию выбрана!'
+                answer = 'Выбрана сортировка по убыванию цены!'
         else:
             if Products.sorting == 'ORDER BY name':
                 answer = 'Сортировка по наименованию уже выбрана!'
             else:
                 Products.sorting = 'ORDER BY name'
-                answer = 'Сортировка по наименованию выбрана!'
+                answer = 'Выбрана сортировка по наименованию!'
         return answer
 
     @staticmethod

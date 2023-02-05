@@ -344,10 +344,6 @@ async def user_profile_callback_query(callback: types.CallbackQuery, callback_da
         if callback_data['action'] == 'add_balance':
             answer = Keyboards.add_balance_user(user_id=callback.from_user.id)
             await callback.answer(answer)
-            text, keyboard = Keyboards.get_profile(user_id=callback.from_user.id)
-            await callback.message.edit_text(text=text,
-                                             reply_markup=keyboard,
-                                             parse_mode='HTML')
         if callback_data['action'] == 'set_address' or callback_data['action'] == 'update_address':
             await callback.message.delete()
             await UserStatesGroup.add_address.set()
