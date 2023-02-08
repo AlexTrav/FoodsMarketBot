@@ -1,6 +1,7 @@
 import random
 from datetime import datetime
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton  #, ReplyKeyboardRemove
 from aiogram.utils.callback_data import CallbackData
 from tgbot.db.database import db
 from tgbot.variables.config import Documents, Products, Users, MainPage
@@ -47,32 +48,28 @@ class Keyboards:
         return text
 
     @staticmethod
-    def set_address_user(**kwargs) -> tuple:
-        db.check_user(user_id=kwargs['user_id'])
-        cb = CallbackData('del_message', 'action')
-        if kwargs['pos'] == 0:
-            text = f'Укажите актуальный адрес доставки следуюищим сообщением:'
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))],
-                [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
-            ])
-            return text, keyboard
-        else:
-            db.update_address(user_id=kwargs['user_id'], address=kwargs['address'])
+    def set_address_user(**kwargs) -> None:
+        db.update_address(user_id=kwargs['user_id'], address=kwargs['address'])
 
     @staticmethod
-    def set_phone_user(**kwargs) -> tuple:
-        db.check_user(user_id=kwargs['user_id'])
-        cb = CallbackData('del_message', 'action')
-        if kwargs['pos'] == 0:
-            text = f'Укажите актуальный номер мобильного телефона:'
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))],
-                [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
-            ])
-            return text, keyboard
-        else:
-            db.update_phone(user_id=kwargs['user_id'], phone=kwargs['phone'])
+    def get_location_user_form() -> tuple:
+        text = f'Пожалуйста, поделитесь своим местоположением при помощи кнопки снизу'
+        keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(KeyboardButton(text='Отправить мою геолокацию', request_location=True))
+        keyboard.add(KeyboardButton(text='Отмена'))
+        return text, keyboard
+
+    @staticmethod
+    def set_phone_user(user_id: int, phone_number: str) -> None:
+        db.update_phone(user_id=user_id, phone=phone_number)
+
+    @staticmethod
+    def get_phone_user_form() -> tuple:
+        text = f'Пожалуйста, поделитесь своим номером телефона при помощи кнопки снизу'
+        keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add(KeyboardButton(text='Отправить мой номер телефона', request_contact=True))
+        keyboard.add(KeyboardButton(text='Отмена'))
+        return text, keyboard
 
     @staticmethod
     def get_product_catalog() -> InlineKeyboardMarkup:
@@ -336,20 +333,21 @@ class Keyboards:
         my_profile_ikm = InlineKeyboardMarkup(row_width=1)
         text = f'<b>Ваш баланс</b>: {user[1]}₸' + '\n'
         my_profile_ikm.add(InlineKeyboardButton(text='Пополнить баланс', callback_data=cb.new(action='add_balance')))
-        if user[2] is None:
+        if user[2] is None or not user[2]:
             text += f'<b>Ваш адрес</b>: Не указан' + '\n'
-            my_profile_ikm.add(InlineKeyboardButton(text='Указать адрес', callback_data=cb.new(action='set_address')))
+            my_profile_ikm.add(InlineKeyboardButton(text='Указать местоположение', callback_data=cb.new(action='set_location')))
         else:
             text += f'<b>Ваш адрес</b>: {user[2]}' + '\n'
-            my_profile_ikm.add(InlineKeyboardButton(text='Изменить адрес', callback_data=cb.new(action='update_address')))
-        if user[3] is None:
+            my_profile_ikm.add(InlineKeyboardButton(text='Изменить местоположение', callback_data=cb.new(action='update_location')))
+        if user[3] is None or not user[3]:
             text += f'<b>Ваш телефон</b>: Не указан' + '\n'
             my_profile_ikm.add(InlineKeyboardButton(text='Указать телефон', callback_data=cb.new(action='set_phone')))
         else:
             text += f'<b>Ваш телефон</b>: {user[3]}' + '\n'
-            my_profile_ikm.add(InlineKeyboardButton(text='Изменить телефон', callback_data=cb.new(action='update_phone')))
         my_profile_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back')))
         return text, my_profile_ikm
+
+
 
     @staticmethod
     def get_work() -> tuple:

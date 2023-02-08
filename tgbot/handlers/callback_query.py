@@ -311,7 +311,7 @@ async def order_payment_callback_query(callback: types.CallbackQuery, callback_d
                     await callback.message.edit_text(text=text,
                                                      reply_markup=keyboard,
                                                      parse_mode='HTML')
-                    await callback.answer('Заказ успешно оплачен и отправлен на доставку!')
+                    await callback.answer('Заказ успешно оплачен и отправлен на доставку! Ожидайте звонка курьера!')
                 else:
                     await callback.answer('Адрес доставки не указан, укажите его в профиле!')
             else:
@@ -344,20 +344,19 @@ async def user_profile_callback_query(callback: types.CallbackQuery, callback_da
         if callback_data['action'] == 'add_balance':
             answer = Keyboards.add_balance_user(user_id=callback.from_user.id)
             await callback.answer(answer)
-        if callback_data['action'] == 'set_address' or callback_data['action'] == 'update_address':
+        if callback_data['action'] == 'set_location' or callback_data['action'] == 'update_location':
             await callback.message.delete()
             await UserStatesGroup.add_address.set()
-            text, keyboard = Keyboards.set_address_user(user_id=callback.from_user.id, pos=0)
+            text, keyboard = Keyboards.get_location_user_form()
             await callback.message.answer(text=text,
                                           reply_markup=keyboard)
-        if callback_data['action'] == 'set_phone' or callback_data['action'] == 'update_phone':
+        if callback_data['action'] == 'set_phone':
             await callback.message.delete()
             await UserStatesGroup.add_phone.set()
-            text, keyboard = Keyboards.set_phone_user(user_id=callback.from_user.id, pos=0)
+            text, keyboard = Keyboards.get_phone_user_form()
             await callback.message.answer(text=text,
                                           reply_markup=keyboard)
     await callback.answer()
-
 
 @dp.callback_query_handler(text='work', state='*')
 async def get_work_callback_query(callback: types.CallbackQuery):

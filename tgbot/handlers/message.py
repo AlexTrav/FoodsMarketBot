@@ -6,6 +6,8 @@ from tgbot.loader import dp
 from tgbot.classes.states import UserStatesGroup, OperatorStatesGroup, AdminStatesGroup
 from tgbot.classes.keyboards import Keyboards
 
+from aiogram.types import ReplyKeyboardRemove
+
 from aiogram.dispatcher import FSMContext
 
 from tgbot.variables.config import Users, MainPage
@@ -14,11 +16,25 @@ from tgbot.variables.config import Users, MainPage
 #######################################################################USER#########################################################################################
 
 @dp.message_handler(content_types=['text'], state=UserStatesGroup.add_address)
-async def set_address_message(message: types.Message, state: FSMContext) -> None:
-    if await state.get_state() == 'UserStatesGroup:add_address':
+async def is_cancel_message(message: types.Message) -> None:
+    if message.text == 'Отмена':
         await UserStatesGroup.my_profile.set()
-        Keyboards.set_address_user(user_id=message.from_user.id, pos=1, address=message.text)
         await message.delete()
+        text, keyboard = Keyboards.get_profile(user_id=message.from_user.id)
+        await message.answer(text="Изменения отменены", reply_markup=ReplyKeyboardRemove())
+        await message.answer(text=text,
+                             reply_markup=keyboard,
+                             parse_mode='HTML')
+
+
+@dp.message_handler(content_types=['location'], state=UserStatesGroup.add_address)
+async def location(message):
+    if message.location is not None:
+        await UserStatesGroup.my_profile.set()
+        address = f"{message.location['latitude']}, {message.location['longitude']}"
+        Keyboards.set_address_user(user_id=message.from_user.id, pos=1, address=address)
+        await message.delete()
+        await message.answer(text="Изменения сохранены", reply_markup=ReplyKeyboardRemove())
         text, keyboard = Keyboards.get_profile(user_id=message.from_user.id)
         await message.answer(text=text,
                              reply_markup=keyboard,
@@ -26,15 +42,27 @@ async def set_address_message(message: types.Message, state: FSMContext) -> None
 
 
 @dp.message_handler(content_types=['text'], state=UserStatesGroup.add_phone)
-async def set_phone_message(message: types.Message, state: FSMContext) -> None:
-    if await state.get_state() == 'UserStatesGroup:add_phone':
+async def is_cancel_message(message: types.Message) -> None:
+    if message.text == 'Отмена':
         await UserStatesGroup.my_profile.set()
-        Keyboards.set_phone_user(user_id=message.from_user.id, pos=1, phone=message.text)
         await message.delete()
         text, keyboard = Keyboards.get_profile(user_id=message.from_user.id)
+        await message.answer(text="Изменения отменены", reply_markup=ReplyKeyboardRemove())
         await message.answer(text=text,
                              reply_markup=keyboard,
                              parse_mode='HTML')
+
+
+@dp.message_handler(content_types=types.ContentType.CONTACT, state=UserStatesGroup.add_phone)
+async def contacts(message: types.Message):
+    await UserStatesGroup.my_profile.set()
+    Keyboards.set_phone_user(user_id=message.from_user.id, phone_number=message.contact.phone_number)
+    await message.delete()
+    await message.answer(text="Изменения сохранены!", reply_markup=ReplyKeyboardRemove())
+    text, keyboard = Keyboards.get_profile(user_id=message.from_user.id)
+    await message.answer(text=text,
+                         reply_markup=keyboard,
+                         parse_mode='HTML')
 
 
 @dp.message_handler(content_types=['text'], state=UserStatesGroup.search)
@@ -184,8 +212,9 @@ async def add_balance_message(message: types.Message, state: FSMContext):
 
 def register_handlers(dispatcher: Dispatcher):
     ###################################USER###################################
-    dispatcher.register_message_handler(set_address_message)
-    dispatcher.register_message_handler(set_phone_message)
+    dispatcher.register_message_handler(location)
+    dispatcher.register_message_handler(is_cancel_message)
+    dispatcher.register_message_handler(contacts)
     dispatcher.register_message_handler(search_results_message)
     ##################################OPERATOR################################
     dispatcher.register_message_handler(search_results_message)
