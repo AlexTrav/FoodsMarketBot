@@ -712,11 +712,13 @@ class Keyboards:
         text += f'<b>Сумма заказа:</b> {order[5]}₸.' + '\n'
         text += '<b>Состовляющие пользователя:</b>' + '\n'
         text += f'<b>Адрес доставки:</b> {user[2]}.' + '\n'
-        text += f'<b>Номер телефона:</b> {user[3]}.'
+        text += f'<b>Номер телефона:</b> {user[3]}.' + '\n'
         delivery_order_item_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
             [InlineKeyboardButton(text='Доставил', callback_data=cb.new(id=order[0], action='delivered'))],
             [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
         ])
+        link = f"https://t.me/{user[5]}"
+        text += f'Ссылка на пользователя: {link}.' + '\n'
         return text, delivery_order_item_ikm
 
 #######################################################################ADMIN#######################################################################################
