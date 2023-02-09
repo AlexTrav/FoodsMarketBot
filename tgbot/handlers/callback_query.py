@@ -356,7 +356,30 @@ async def user_profile_callback_query(callback: types.CallbackQuery, callback_da
             text, keyboard = Keyboards.get_phone_user_form()
             await callback.message.answer(text=text,
                                           reply_markup=keyboard)
+        if callback_data['action'] == 'list_admins':
+            await UserStatesGroup.list_admins.set()
+            MainPage.entries = 10
+            text, keyboard = Keyboards.get_list_admins(callback.from_user.id)
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard)
     await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('list_admins', 'id', 'action').filter(), state=UserStatesGroup.list_admins)
+async def list_admins_callback_query(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        await UserStatesGroup.my_profile.set()
+        text, keyboard = Keyboards.get_profile(callback.from_user.id)
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard,
+                                         parse_mode='HTML')
+    else:
+        if callback_data['action'] == 'up_page' or callback_data['action'] == 'down_page':
+            Keyboards.change_page(callback_data['action'])
+            text, keyboard = Keyboards.get_list_admins(callback.from_user.id)
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard)
+
 
 @dp.callback_query_handler(text='work', state='*')
 async def get_work_callback_query(callback: types.CallbackQuery):
@@ -914,6 +937,7 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(back_search_callback_query)
     dispatcher.register_callback_query_handler(search_answer_callback_query)
     dispatcher.register_callback_query_handler(sorting_callback_query)
+    dispatcher.register_callback_query_handler(list_admins_callback_query)
     ##################################OPERATOR################################
     dispatcher.register_callback_query_handler(working_warehouse_callback_query)
     dispatcher.register_callback_query_handler(operator_functions_callback_query)

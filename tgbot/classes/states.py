@@ -18,6 +18,7 @@ class UserStatesGroup(StatesGroup):
     search = State()
     my_profile = State()
     add_phone = State()
+    list_admins = State()
 
 
 class OperatorStatesGroup(StatesGroup):

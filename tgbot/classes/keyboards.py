@@ -344,9 +344,36 @@ class Keyboards:
             my_profile_ikm.add(InlineKeyboardButton(text='Указать телефон', callback_data=cb.new(action='set_phone')))
         else:
             text += f'<b>Ваш телефон</b>: {user[3]}' + '\n'
+        my_profile_ikm.add(InlineKeyboardButton(text='Список менеджеров', callback_data=cb.new(action='list_admins')))
         my_profile_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back')))
         return text, my_profile_ikm
 
+
+    @staticmethod
+    def get_list_admins(user_id: int) -> tuple:
+        cb = CallbackData('list_admins', 'id', 'action')
+        text = 'Список менеджеров:'
+        list_admins_id = db.get_data(table='workers', where=1, operand1='role_id', operand2=4)
+        list_admins_ikm = InlineKeyboardMarkup(row_width=3)
+        buttons = []
+        if len(list_admins_id) > 10:
+            if MainPage.entries != 10:
+                list_admins_ikm.add(InlineKeyboardButton(text='↑', callback_data=cb.new(id=user_id, action='up_page')))
+            for entry in list_admins_id[MainPage.entries - 10:MainPage.entries]:
+                user = db.get_data(table='users', where=1, operand1='id', operand2=entry[0])[0]
+                link = f"https://t.me/{user[5]}"
+                list_admins_ikm.add(InlineKeyboardButton(text=user[5], url=link))
+            list_admins_ikm.add(*buttons)
+            if MainPage.entries < len(list_admins_id):
+                list_admins_ikm.add(InlineKeyboardButton(text='↓', callback_data=cb.new(id=user_id, action='down_page')))
+        else:
+            for entry in list_admins_id:
+                user = db.get_data(table='users', where=1, operand1='id', operand2=entry[0])[0]
+                link = f"https://t.me/{user[5]}"
+                list_admins_ikm.add(InlineKeyboardButton(text=user[5], url=link))
+            list_admins_ikm.add(*buttons)
+        list_admins_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+        return text, list_admins_ikm
 
 
     @staticmethod
