@@ -446,6 +446,17 @@ class Keyboards:
             users_ids.append(entry[0])
         return users_ids
 
+    @staticmethod
+    def get_usernames() -> list:
+        usernames = []
+        for entry in db.get_data(table='users'):
+            usernames.append(entry[5])
+        return usernames
+
+    @staticmethod
+    def get_user_id_for_username(username: str) -> int:
+        user_id = int(db.get_data(table='users', where=1, operand1='user_name', operand2=username)[0][0])
+        return user_id
 
 #######################################################################OPERATOR####################################################################################
 
@@ -745,9 +756,32 @@ class Keyboards:
         return text, get_users_admin_ikm
 
     @staticmethod
-    def set_user_id() -> tuple:
-        cb = CallbackData('set_user_id', 'action')
-        text = 'Введите код пользователя (следующим сообщением):'
+    def get_users_() -> tuple:
+        cb = CallbackData('users_', 'id', 'action')
+        text = 'Пользователи:'
+        get_users_admin_ikm = InlineKeyboardMarkup(row_width=1)
+        users = db.get_data(table='users')
+        buttons = []
+        if len(users) > 10:
+            if MainPage.entries != 10:
+                get_users_admin_ikm.add(InlineKeyboardButton(text='↑', callback_data=cb.new(id=0, action='up_page')))
+            for entry in users[MainPage.entries - 10:MainPage.entries]:
+                buttons.append(InlineKeyboardButton(text=entry[5], callback_data=cb.new(id=entry[0], action='user')))
+            get_users_admin_ikm.add(*buttons)
+            if MainPage.entries < len(users):
+                get_users_admin_ikm.add(InlineKeyboardButton(text='↓', callback_data=cb.new(id=0, action='down_page')))
+        else:
+            for entry in users:
+                buttons.append(InlineKeyboardButton(text=entry[5], callback_data=cb.new(id=entry[0], action='user')))
+            get_users_admin_ikm.add(*buttons)
+        get_users_admin_ikm.add(InlineKeyboardButton(text='Поиск', callback_data=cb.new(id=1, action='search')))
+        get_users_admin_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+        return text, get_users_admin_ikm
+
+    @staticmethod
+    def set_username() -> tuple:
+        cb = CallbackData('set_username', 'action')
+        text = 'Введите username пользователя (следующим сообщением):'
         set_user_id_ikm = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text='Понятно', callback_data=cb.new(action='delete'))],
                 [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
@@ -794,7 +828,7 @@ class Keyboards:
         if user[3] is None:
             text += f'Телефон: Не указан' + '\n'
         else:
-            text += f'Телефон {user[3]}' + '\n'
+            text += f'Телефон: {user[3]}' + '\n'
         link = f"https://t.me/{user[5]}"
         text += f'Ссылка на пользователя: {link}'
         user_profile_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))

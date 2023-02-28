@@ -797,18 +797,48 @@ async def working_with_users_callback_query(callback: types.CallbackQuery, callb
     else:
         if callback_data['action'] == 'give_role':
             await AdminStatesGroup.give_role_user.set()
-            text, keyboard = Keyboards.set_user_id()
+            text, keyboard = Keyboards.get_users_()
             await callback.message.edit_text(text=text,
                                              reply_markup=keyboard)
         if callback_data['action'] == 'add_balance':
             await AdminStatesGroup.add_balance.set()
-            text, keyboard = Keyboards.set_user_id()
+            text, keyboard = Keyboards.get_users_()
             await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard)
+
+
+@dp.callback_query_handler(CallbackData('users_', 'id', 'action').filter(), state='*')
+async def set_user_or_search_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        await AdminStatesGroup.users.set()
+        text, keyboard = Keyboards.get_users()
+        await callback.message.edit_text(text=text,
                                          reply_markup=keyboard)
+    else:
+        if callback_data['action'] == 'up_page' or callback_data['action'] == 'down_page':
+            Keyboards.change_page(callback_data['action'])
+            text, keyboard = Keyboards.get_users_()
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard)
+        if callback_data['action'] == 'user':
+            current_state = await state.get_state()
+            if current_state == 'AdminStatesGroup:give_role_user':
+                text, keyboard = Keyboards.get_user_roles(user_id=callback_data['id'])
+                await callback.message.edit_text(text=text,
+                                                 reply_markup=keyboard)
+            if current_state == 'AdminStatesGroup:add_balance':
+                text, keyboard = Keyboards.get_user_inf(user_id=callback_data['id'])
+                await callback.message.edit_text(text=text,
+                                                 reply_markup=keyboard,
+                                                 parse_mode='HTML')
+        if callback_data['action'] == 'search':
+            text, keyboard = Keyboards.set_username()
+            await callback.message.edit_text(text=text,
+                                             reply_markup=keyboard)
+    await callback.answer()
 
-
-@dp.callback_query_handler(CallbackData('set_user_id', 'action').filter(), state='*')
-async def set_user_id_callback_query(callback: types.CallbackQuery, callback_data: dict):
+@dp.callback_query_handler(CallbackData('set_username', 'action').filter(), state='*')
+async def set_username_callback_query(callback: types.CallbackQuery, callback_data: dict):
     if callback_data['action'] == 'delete':
         await callback.message.delete()
     else:
@@ -821,7 +851,8 @@ async def set_user_id_callback_query(callback: types.CallbackQuery, callback_dat
 @dp.callback_query_handler(CallbackData('roles_info','id', 'action').filter(), state=AdminStatesGroup.give_role_user)
 async def working_roles_user_callback_query(callback: types.CallbackQuery, callback_data: dict):
     if callback_data['action'] == 'back':
-        text, keyboard = Keyboards.set_user_id()
+        await AdminStatesGroup.users.set()
+        text, keyboard = Keyboards.get_users()
         await callback.message.edit_text(text=text,
                                          reply_markup=keyboard)
     else:
@@ -833,7 +864,8 @@ async def working_roles_user_callback_query(callback: types.CallbackQuery, callb
 @dp.callback_query_handler(CallbackData('user_info', 'id', 'action').filter(), state=AdminStatesGroup.add_balance)
 async def user_info_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
-        text, keyboard = Keyboards.set_user_id()
+        await AdminStatesGroup.users.set()
+        text, keyboard = Keyboards.get_users()
         await callback.message.edit_text(text=text,
                                          reply_markup=keyboard)
     else:
@@ -960,7 +992,8 @@ def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(working_warehouse_callback_query_admin)
     dispatcher.register_callback_query_handler(users_callback_query_admin)
     dispatcher.register_callback_query_handler(working_with_users_callback_query)
-    dispatcher.register_callback_query_handler(set_user_id_callback_query)
+    dispatcher.register_callback_query_handler(set_user_or_search_callback_query)
+    dispatcher.register_callback_query_handler(set_username_callback_query)
     dispatcher.register_callback_query_handler(working_roles_user_callback_query)
     dispatcher.register_callback_query_handler(user_info_callback_query)
     dispatcher.register_callback_query_handler(add_balance_user_callback_query)

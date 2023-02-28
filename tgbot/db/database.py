@@ -30,7 +30,7 @@ class DataBase:
             self.cursor.execute(f"SELECT * FROM {kwargs['table']} WHERE {kwargs['operand1']} = {kwargs['operand2']} ORDER BY {kwargs['operand3']} DESC")
         elif 'where' in kwargs and 'get_name_product' not in kwargs and 'order_by' not in kwargs:
             if kwargs['where'] == 1:
-                self.cursor.execute(f"SELECT * FROM {kwargs['table']} WHERE {kwargs['operand1']} = {kwargs['operand2']}")
+                self.cursor.execute(f'SELECT * FROM {kwargs["table"]} WHERE {kwargs["operand1"]} = "{kwargs["operand2"]}"')
             if kwargs['where'] == 2:
                 self.cursor.execute(f"SELECT * FROM {kwargs['table']} WHERE {kwargs['operand1']} = {kwargs['operand2']} AND {kwargs['operand3']} = {kwargs['operand4']}")
         elif 'get_name_product' in kwargs:

@@ -45,5 +45,6 @@ class AdminStatesGroup(StatesGroup):
     give_role_user = State()
     add_balance = State()
     add_balance_user = State()
+    # search_user = State()
     documents = State()
     document = State()

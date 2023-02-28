@@ -145,19 +145,14 @@ async def add_product_message(message: types.Message):
 
 @dp.message_handler(content_types=['text'], state=AdminStatesGroup.give_role_user)
 async def give_role_message(message: types.Message):
-    if message.text.isdigit():
-        if int(message.text) in Keyboards.get_users_table():
-            text, keyboard = Keyboards.get_user_roles(user_id=message.text)
-            await message.answer(text=text,
-                                 reply_markup=keyboard)
-        else:
-            await message.answer('Такого кода нет в базе данных')
-            text, keyboard = Keyboards.set_user_id()
-            await message.answer(text=text,
-                                 reply_markup=keyboard)
+    if message.text in Keyboards.get_usernames():
+        user_id = Keyboards.get_user_id_for_username(message.text)
+        text, keyboard = Keyboards.get_user_roles(user_id=user_id)
+        await message.answer(text=text,
+                             reply_markup=keyboard)
     else:
-        await message.answer('Код должен быть числовым')
-        text, keyboard = Keyboards.set_user_id()
+        await message.answer('Такого username-а нет в базе данных')
+        text, keyboard = Keyboards.set_username()
         await message.answer(text=text,
                              reply_markup=keyboard)
     await message.delete()
@@ -165,20 +160,15 @@ async def give_role_message(message: types.Message):
 
 @dp.message_handler(content_types=['text'], state=AdminStatesGroup.add_balance)
 async def add_user_id_message(message: types.Message):
-    if message.text.isdigit():
-        if int(message.text) in Keyboards.get_users_table():
-            text, keyboard = Keyboards.get_user_inf(user_id=message.text)
-            await message.answer(text=text,
-                                 reply_markup=keyboard,
-                                 parse_mode='HTML')
-        else:
-            await message.answer('Такого кода нет в базе данных')
-            text, keyboard = Keyboards.set_user_id()
-            await message.answer(text=text,
-                                 reply_markup=keyboard)
+    if message.text in Keyboards.get_usernames():
+        user_id = Keyboards.get_user_id_for_username(message.text)
+        text, keyboard = Keyboards.get_user_inf(user_id=user_id)
+        await message.answer(text=text,
+                             reply_markup=keyboard,
+                             parse_mode='HTML')
     else:
-        await message.answer('Код должен быть числовым')
-        text, keyboard = Keyboards.set_user_id()
+        await message.answer('Такого username-a нет в базе данных')
+        text, keyboard = Keyboards.set_username()
         await message.answer(text=text,
                              reply_markup=keyboard)
     await message.delete()
