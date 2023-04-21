@@ -6,6 +6,7 @@ from aiogram.utils.callback_data import CallbackData
 from tgbot.db.database import db
 from tgbot.variables.config import Documents, Products, Users, MainPage
 
+
 class Keyboards:
 
 
@@ -299,14 +300,14 @@ class Keyboards:
         cb = CallbackData('order_item', 'id', 'action')
         order = db.get_data(table='orders', where=1, operand1='id', operand2=order_id)
         total_cost = 0
-        text = ''
+        text = f'<b>Заказ под номером:</b> {order_id}' + '\n'
         i = 1
         for entry in db.get_data(table='order_items', where=1, operand1='order_id', operand2=order_id):
             name = db.get_data(get_name_product=1, field1='name', operand1=entry[3])[0]
             text += f'<b>{i}.</b> <b>Название</b> {name}; <b>Кол.</b> {entry[4]}; <b>Стоимость</b> {entry[5]}₸.' + '\n'
             total_cost += entry[5] * entry[4]
             i += 1
-        text += f'<b>К оплате:</b> {total_cost}₸'
+        text += f'<b>Общая стоимость заказа:</b> {total_cost}₸'
         order_item_ikm = InlineKeyboardMarkup(row_width=1)
         if order[0][3] == 0:
             order_item_ikm.add(InlineKeyboardButton(text='Оплатить', callback_data=cb.new(id=order_id, action='to_pay')))
@@ -514,9 +515,9 @@ class Keyboards:
                 text += f'Новая цена: \n'
             product_ikm = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text='Сохранить', callback_data=cb.new(id=product[0], action='save'))],
-                [InlineKeyboardButton(text='-', callback_data=cb.new(id=product[0], action='dec_count_product')),
-                InlineKeyboardButton(text=Documents.new_count, callback_data=cb.new(id=0, action='count_product')),
-                InlineKeyboardButton(text='+', callback_data=cb.new(id=product[0], action='inc_count_product'))],
+                [InlineKeyboardButton(text='-', callback_data=cb.new(id=product[0], action='dec_count_product'))],
+                [InlineKeyboardButton(text=Documents.new_count, callback_data=cb.new(id=0, action='count_product'))],
+                [InlineKeyboardButton(text='+', callback_data=cb.new(id=product[0], action='inc_count_product'))],
                 [InlineKeyboardButton(text='Изменить цену', callback_data=cb.new(id=product[0], action='change_price'))],
                 [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
             ])
@@ -525,9 +526,9 @@ class Keyboards:
             cb = CallbackData('write_off_product', 'id', 'action')
             text += f'Количество списанного: {Documents.write_off_count}. \n'
             product_ikm = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text='-', callback_data=cb.new(id=product[0], action='dec_count_product')),
-                InlineKeyboardButton(text=Documents.write_off_count, callback_data=cb.new(id=0, action='count_product')),
-                InlineKeyboardButton(text='+', callback_data=cb.new(id=product[0], action='inc_count_product'))],
+                [InlineKeyboardButton(text='-', callback_data=cb.new(id=product[0], action='dec_count_product'))],
+                [InlineKeyboardButton(text=Documents.write_off_count, callback_data=cb.new(id=0, action='count_product'))],
+                [InlineKeyboardButton(text='+', callback_data=cb.new(id=product[0], action='inc_count_product'))],
                 [InlineKeyboardButton(text='Списать', callback_data=cb.new(id=product[0], action='write_off'))],
                 [InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back'))]
             ])

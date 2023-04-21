@@ -155,7 +155,7 @@ async def add_product_callback_query(callback: types.CallbackQuery, callback_dat
                 await callback.message.answer(text=text,
                                               reply_markup=keyboard)
                 await callback.answer()
-            await callback.message.delete()
+            # await callback.message.delete()
             if callback_data['id'] == '-1':
                 await UserStatesGroup.products.set()
                 await callback.message.answer(text='Выберите продукт:',
@@ -751,7 +751,9 @@ async def delivered_callback_query(callback: types.CallbackQuery, callback_data:
                                          reply_markup=keyboard)
         await callback.answer()
     else:
-        db.delivered_order(user_id=callback.from_user.id, order_id=callback_data['id'])
+        client_id = db.delivered_order(user_id=callback.from_user.id, order_id=callback_data['id'])[0]
+        text = f'Заказ под номером: {callback_data["id"]} - доставлен!'
+        await dp.bot.send_message(client_id, text=text)
         await CourierStatesGroup.orders.set()
         text, keyboard = Keyboards.get_undelivered_orders()
         await callback.message.edit_text(text=text,
@@ -837,6 +839,7 @@ async def set_user_or_search_callback_query(callback: types.CallbackQuery, callb
                                              reply_markup=keyboard)
     await callback.answer()
 
+
 @dp.callback_query_handler(CallbackData('set_username', 'action').filter(), state='*')
 async def set_username_callback_query(callback: types.CallbackQuery, callback_data: dict):
     if callback_data['action'] == 'delete':
@@ -847,6 +850,7 @@ async def set_username_callback_query(callback: types.CallbackQuery, callback_da
         await callback.message.edit_text(text=text,
                                          reply_markup=keyboard)
         await callback.answer()
+
 
 @dp.callback_query_handler(CallbackData('roles_info','id', 'action').filter(), state=AdminStatesGroup.give_role_user)
 async def working_roles_user_callback_query(callback: types.CallbackQuery, callback_data: dict):
@@ -860,6 +864,7 @@ async def working_roles_user_callback_query(callback: types.CallbackQuery, callb
         text, keyboard = Keyboards.get_user_roles(user_id=callback_data['id'])
         await callback.message.edit_text(text=text,
                                          reply_markup=keyboard)
+
 
 @dp.callback_query_handler(CallbackData('user_info', 'id', 'action').filter(), state=AdminStatesGroup.add_balance)
 async def user_info_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):

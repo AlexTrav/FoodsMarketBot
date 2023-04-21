@@ -224,6 +224,9 @@ class DataBase:
         self.conn.commit()
         self.cursor.execute(f'UPDATE orders SET is_delivered = 1 WHERE id = {kwargs["order_id"]}')
         self.conn.commit()
+        self.cursor.execute(f'SELECT user_id FROM orders WHERE id = {kwargs["order_id"]}')
+        client_id = self.cursor.fetchone()
+        return client_id
 
 
 #######################################################################ADMIN#######################################################################################
