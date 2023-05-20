@@ -77,6 +77,7 @@ async def search_results_message(message: types.Message, state: FSMContext) -> N
 
 #######################################################################OPERATOR#######################################################################################
 
+
 @dp.message_handler(content_types=['text'], state=OperatorStatesGroup.search)
 async def search_results_message(message: types.Message, state: FSMContext) -> None:
     await message.delete()
@@ -143,6 +144,7 @@ async def add_product_message(message: types.Message):
 
 #######################################################################ADMIN##########################################################################################
 
+
 @dp.message_handler(content_types=['text'], state=AdminStatesGroup.give_role_user)
 async def give_role_message(message: types.Message):
     if message.text in Keyboards.get_usernames():
@@ -185,7 +187,7 @@ async def add_balance_message(message: types.Message, state: FSMContext):
                 Keyboards.get_update_documents_add_balance(message.from_user.id, int(message.text), data['document_id'])
                 text, keyboard = Keyboards.get_document(data['document_id'])
                 await message.answer(text=text,
-                                        reply_markup=keyboard)
+                                     reply_markup=keyboard)
             else:
                 Keyboards.get_insert_documents_add_balance(message.from_user.id, int(message.text))
                 text, keyboard = Keyboards.get_user_inf(user_id=Users.id)

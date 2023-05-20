@@ -134,8 +134,7 @@ async def add_product_callback_query(callback: types.CallbackQuery, callback_dat
                 answer, is_delete = db.working_with_basket(state=callback_data['action'], user_id=callback.from_user.id,
                                                            product_id=callback_data['id'])
                 await UserStatesGroup.adding_to_basket.set()
-                if callback_data['action'] == 'add_basket_count' or callback_data[
-                    'action'] == 'dec_basket_count' and is_delete:
+                if callback_data['action'] == 'add_basket_count' or callback_data['action'] == 'dec_basket_count' and is_delete:
                     text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'],
                                                                   user_id=callback.from_user.id)
                     await callback.message.edit_media(InputMedia(media=photo, caption=text), reply_markup=keyboard)
@@ -147,8 +146,8 @@ async def add_product_callback_query(callback: types.CallbackQuery, callback_dat
                 text, keyboard, photo = Keyboards.get_product(product_id=callback_data['id'],
                                                               user_id=callback.from_user.id, back_id=-2)
                 await callback.message.edit_media(InputMedia(media=photo, caption=text), reply_markup=keyboard)
-            await callback.answer(text=answer)
-            if callback_data['action'] == 'back':
+                await callback.answer(text=answer)
+            elif callback_data['action'] == 'back':
                 await callback.message.delete()
                 await UserStatesGroup.edit_basket.set()
                 text, keyboard = Keyboards.get_edit_basket(user_id=callback.from_user.id)
@@ -156,7 +155,7 @@ async def add_product_callback_query(callback: types.CallbackQuery, callback_dat
                                               reply_markup=keyboard)
                 await callback.answer()
             # await callback.message.delete()
-            if callback_data['id'] == '-1':
+            elif callback_data['id'] == '-1':
                 await UserStatesGroup.products.set()
                 await callback.message.answer(text='Выберите продукт:',
                                               reply_markup=Keyboards.get_products(
@@ -685,6 +684,7 @@ async def add_product_msg_callback_query(callback: types.CallbackQuery, callback
                                              reply_markup=keyboard)
     await callback.answer()
 
+
 @dp.callback_query_handler(CallbackData('categories', 'id', 'action').filter(), state=OperatorStatesGroup.select_subcategory)
 async def select_category_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
@@ -699,6 +699,7 @@ async def select_category_callback_query(callback: types.CallbackQuery, callback
         await callback.message.edit_text(text='Выберите подкатегорию продуктов:',
                                          reply_markup=Keyboards.get_product_subcatalog(category_id=callback_data['id']))
     await callback.answer()
+
 
 @dp.callback_query_handler(CallbackData('subcategories', 'id', 'action').filter(), state=OperatorStatesGroup.select_subcategory)
 async def select_subcategory_callback_query(callback: types.CallbackQuery, callback_data: dict):
@@ -852,7 +853,7 @@ async def set_username_callback_query(callback: types.CallbackQuery, callback_da
         await callback.answer()
 
 
-@dp.callback_query_handler(CallbackData('roles_info','id', 'action').filter(), state=AdminStatesGroup.give_role_user)
+@dp.callback_query_handler(CallbackData('roles_info', 'id', 'action').filter(), state=AdminStatesGroup.give_role_user)
 async def working_roles_user_callback_query(callback: types.CallbackQuery, callback_data: dict):
     if callback_data['action'] == 'back':
         await AdminStatesGroup.users.set()
@@ -953,6 +954,7 @@ async def get_back_document_callback_query(callback: types.CallbackQuery, callba
                                              reply_markup=keyboard)
 
 ###################################################################REGISTER_HANDLERS##################################################################################
+
 
 def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_callback_query_handler(exit_callback_query)

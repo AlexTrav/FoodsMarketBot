@@ -176,7 +176,6 @@ class DataBase:
         self.cursor.execute(f'UPDATE products SET cost = {kwargs["new_price"]} WHERE id = {kwargs["product_id"]}')
         self.conn.commit()
 
-
     def product_change_count(self, **kwargs):
         if 'arrival_product' in kwargs:
             self.cursor.execute(f'UPDATE products SET `count` = `count` + {kwargs["new_count"]}  WHERE id = {kwargs["product_id"]}')
@@ -259,11 +258,9 @@ class DataBase:
             self.cursor.execute(f'INSERT INTO workers(id, role_id) VALUES ({kwargs["user_id"]}, 4)')
         self.conn.commit()
 
-
     def update_balance(self, **kwargs):
         self.cursor.execute(f'UPDATE users SET balance = balance + {kwargs["sum"]} WHERE id = {kwargs["user_id"]}')
         self.conn.commit()
-
 
     def insert_documents_add_balance(self, **kwargs):
         self.cursor.execute(f'INSERT INTO documents(user_id, product_id, doc_type_id, invoice_date, `count`, cost, invoice_number)'

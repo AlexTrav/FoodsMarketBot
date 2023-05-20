@@ -43,4 +43,3 @@ async def start_command(message: types.Message) -> None:
 
 def register_handlers(dispatcher: Dispatcher):
     dispatcher.register_message_handler(start_command, commands=['start'])
-
