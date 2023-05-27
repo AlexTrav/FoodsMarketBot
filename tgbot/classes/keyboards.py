@@ -977,7 +977,7 @@ class Keyboards:
             text += f'По цене: {document[6]}' + '\n'
         elif doc_type_id == 3:
             text = f'Пополнение баланса пользователя: №{document[7]}' + '\n'
-            text += f'Дата: {res_date}' + '\n'
+            text += f'Дата отправки запроса на пополнение баланса: {res_date}' + '\n'
             text += f'Выполненно: {document[1]}' + '\n'
             text += f'Пользователю: {document[2]}' + '\n'
             text += f'Начислено: {document[6]}' + '\n'
@@ -988,7 +988,6 @@ class Keyboards:
             user = db.get_data(table='users', where=1, operand1='id', operand2=document[2])[0]
             link = f"https://t.me/{user[5]}"
             text += f'Ссылка на пользователя: {link}'
-            document_type_ikm.add(
-                InlineKeyboardButton(text='Выполнить', callback_data=cb.new(id=document[2], action='add_balance')))
+            document_type_ikm.add(InlineKeyboardButton(text='Выполнить', callback_data=cb.new(id=document[2], action='add_balance')))
         document_type_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=doc_type_id, action='back')))
         return text, document_type_ikm
