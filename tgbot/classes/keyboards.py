@@ -783,7 +783,7 @@ class Keyboards:
         text = 'Выберите действие:'
         get_users_admin_ikm = InlineKeyboardMarkup(row_width=1, inline_keyboard=[
             [InlineKeyboardButton(text='Выдача прав', callback_data=cb.new(action='give_role'))],
-            [InlineKeyboardButton(text='Пополнение баланса', callback_data=cb.new(action='add_balance'))],
+            # [InlineKeyboardButton(text='Пополнение баланса', callback_data=cb.new(action='add_balance'))],
             [InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back'))]
         ])
         return text, get_users_admin_ikm
