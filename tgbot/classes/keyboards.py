@@ -893,8 +893,7 @@ class Keyboards:
         buttons = []
         for entry in db.get_data(table='document_types'):
             buttons.append(InlineKeyboardButton(text=entry[1], callback_data=cb.new(id=entry[0], action='document')))
-        documents_type_ikm.add(*buttons).add(
-            InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+        documents_type_ikm.add(*buttons).add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
         return text, documents_type_ikm
 
     @staticmethod
@@ -912,8 +911,10 @@ class Keyboards:
     def get_documents(doc_type_id: int) -> tuple:
         cb = CallbackData('document', 'id', 'action')
         text = 'Выберите документ:'
-        documents = db.get_data(table='documents', where=1, order_by=1, operand1='doc_type_id', operand2=doc_type_id,
-                                operand3='id')
+        if doc_type_id == '5':
+            documents = db.get_data(table='orders', order_by=1, operand1='id')
+        else:
+            documents = db.get_data(table='documents', where=1, order_by=1, operand1='doc_type_id', operand2=doc_type_id, operand3='id')
         documents_type_ikm = InlineKeyboardMarkup(row_width=1)
         buttons = []
         if len(documents) > 10:
@@ -921,24 +922,22 @@ class Keyboards:
                 documents_type_ikm.add(
                     InlineKeyboardButton(text='↑', callback_data=cb.new(id=doc_type_id, action='up_page')))
             for document in documents[MainPage.entries - 10:MainPage.entries]:
-                res_date = str(document[4])[6:8] + '.' + str(document[4])[4:6] + '.' + str(document[4])[
-                                                                                       2:4] + ' ' + str(document[4])[
-                                                                                                    8:10] + ':' + str(
-                    document[4])[10:12]
-                buttons.append(
-                    InlineKeyboardButton(text=res_date, callback_data=cb.new(id=document[0], action='document')))
+                if doc_type_id == '5':
+                    res_date = str(document[2])[6:8] + '.' + str(document[2])[4:6] + '.' + str(document[2])[2:4] + ' ' + str(document[2])[8:10] + ':' + str(document[2])[10:12]
+                else:
+                    res_date = str(document[4])[6:8] + '.' + str(document[4])[4:6] + '.' + str(document[4])[2:4] + ' ' + str(document[4])[8:10] + ':' + str(document[4])[10:12]
+                buttons.append(InlineKeyboardButton(text=res_date, callback_data=cb.new(id=document[0], action='document')))
             documents_type_ikm.add(*buttons)
             if MainPage.entries < len(documents):
                 documents_type_ikm.add(
                     InlineKeyboardButton(text='↓', callback_data=cb.new(id=doc_type_id, action='down_page')))
         else:
             for document in documents:
-                res_date = str(document[4])[6:8] + '.' + str(document[4])[4:6] + '.' + str(document[4])[
-                                                                                       2:4] + ' ' + str(document[4])[
-                                                                                                    8:10] + ':' + str(
-                    document[4])[10:12]
-                buttons.append(
-                    InlineKeyboardButton(text=res_date, callback_data=cb.new(id=document[0], action='document')))
+                if doc_type_id == '5':
+                    res_date = str(document[2])[6:8] + '.' + str(document[2])[4:6] + '.' + str(document[2])[2:4] + ' ' + str(document[2])[8:10] + ':' + str(document[2])[10:12]
+                else:
+                    res_date = str(document[4])[6:8] + '.' + str(document[4])[4:6] + '.' + str(document[4])[2:4] + ' ' + str(document[4])[8:10] + ':' + str(document[4])[10:12]
+                buttons.append(InlineKeyboardButton(text=res_date, callback_data=cb.new(id=document[0], action='document')))
             documents_type_ikm.add(*buttons)
         documents_type_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
         return text, documents_type_ikm
@@ -951,43 +950,62 @@ class Keyboards:
             MainPage.entries += 10
 
     @staticmethod
-    def get_document(doc_id: int) -> tuple:
+    def get_document(doc_id: int, doc_type_id: int) -> tuple:
         cb = CallbackData('document', 'id', 'action')
-        doc_type_id = db.get_doc_type_id(doc_id=doc_id)
-        document = db.get_data(table='documents', where=1, operand1='id', operand2=doc_id)[0]
         document_type_ikm = InlineKeyboardMarkup(row_width=1)
-        res_date = str(document[4])[6:8] + '.' + str(document[4])[4:6] + '.' + str(document[4])[2:4] + ' ' + str(
-            document[4])[8:10] + ':' + str(document[4])[10:12]
         text = ''
-        if doc_type_id == 1:
-            product_name = db.get_data(get_name_product=1, field1='name', operand1=document[2])[0][0]
-            text = f'Приходная накладная: №{document[7]}' + '\n'
+        if doc_type_id == '5':
+            order = db.get_data(table='orders', where=1, operand1='id', operand2=doc_id)[0]
+            order_items = db.get_data(table='order_items', where=1, operand1='id', operand2=doc_id)
+            res_date = str(order[2])[6:8] + '.' + str(order[2])[4:6] + '.' + str(order[2])[2:4] + ' ' + str(order[2])[8:10] + ':' + str(order[2])[10:12]
+            i, total_cost = 1, 0
+            is_paid, is_delivered = ['Не оплачен', 'Оплачен'][order[3]], ['Не доставлен', 'Доставлен'][order[4]]
+            text += f'Заказ под номером: {order[0]}' + '\n'
             text += f'Дата: {res_date}' + '\n'
-            text += f'Выполненно: {document[1]}' + '\n'
-            text += f'Продукт: {product_name}' + '\n'
-            text += f'Добавлено количества: {document[5]}' + '\n'
-            text += f'По цене: {document[6]}' + '\n'
-        elif doc_type_id == 2:
-            product_name = db.get_data(get_name_product=1, field1='name', operand1=document[2])[0][0]
-            text = f'Расходная накладная: №{document[7]}' + '\n'
-            text += f'Дата: {res_date}' + '\n'
-            text += f'Выполненно: {document[1]}' + '\n'
-            text += f'Продукт: {product_name}' + '\n'
-            text += f'Количество списанного: {document[5]}' + '\n'
-            text += f'По цене: {document[6]}' + '\n'
-        elif doc_type_id == 3:
-            text = f'Пополнение баланса пользователя: №{document[7]}' + '\n'
-            text += f'Дата отправки запроса на пополнение баланса: {res_date}' + '\n'
-            text += f'Выполненно: {document[1]}' + '\n'
-            text += f'Пользователю: {document[2]}' + '\n'
-            text += f'Начислено: {document[6]}' + '\n'
-        elif doc_type_id == 4:
-            text = f'Запрос на пополнение баланса пользователя: №{document[7]}' + '\n'
-            text += f'Дата отправки запроса: {res_date}' + '\n'
-            text += f'Пользователю: {document[2]}' + '\n'
-            user = db.get_data(table='users', where=1, operand1='id', operand2=document[2])[0]
-            link = f"https://t.me/{user[5]}"
-            text += f'Ссылка на пользователя: {link}'
-            document_type_ikm.add(InlineKeyboardButton(text='Выполнить', callback_data=cb.new(id=document[2], action='add_balance')))
+            text += f'Заказан пользователем: {order[1]}' + '\n'
+            text += f'Статус оплаты: {is_paid}' + '\n'
+            text += f'Статус доставки: {is_delivered}' + '\n'
+            for entry in order_items:
+                name, cost = db.get_data(get_name_product=1, field1='name', field2='cost', operand1=entry[3])[0]
+                text += f'<b>{i}.</b> <b>Название</b> {name}; <b>Кол.</b> {entry[4]}; <b>Сумма</b> {cost * entry[4]}₸.' + '\n'
+                total_cost += cost * entry[4]
+                i += 1
+            text += f'<b>Сумма заказа:</b> {total_cost}₸'
+        else:
+            # doc_type_id = db.get_doc_type_id(doc_id=doc_id)
+            document = db.get_data(table='documents', where=1, operand1='id', operand2=doc_id)[0]
+            res_date = str(document[4])[6:8] + '.' + str(document[4])[4:6] + '.' + str(document[4])[2:4] + ' ' + str(document[4])[8:10] + ':' + str(document[4])[10:12]
+            if doc_type_id == '1':
+                product_name = db.get_data(get_name_product=1, field1='name', operand1=document[2])[0][0]
+                text = f'Приходная накладная: №{document[7]}' + '\n'
+                text += f'Дата: {res_date}' + '\n'
+                text += f'Выполненно: {document[1]}' + '\n'
+                text += f'Продукт: {product_name}' + '\n'
+                text += f'Добавлено количества: {document[5]}' + '\n'
+                text += f'По цене: {document[6]}₸' + '\n'
+            elif doc_type_id == '2':
+                product_name = db.get_data(get_name_product=1, field1='name', operand1=document[2])[0][0]
+                text = f'Расходная накладная: №{document[7]}' + '\n'
+                text += f'Дата: {res_date}' + '\n'
+                text += f'Выполненно: {document[1]}' + '\n'
+                text += f'Продукт: {product_name}' + '\n'
+                text += f'Количество списанного: {document[5]}' + '\n'
+                text += f'По цене: {document[6]}₸' + '\n'
+            elif doc_type_id == '3':
+                text = f'Пополнение баланса пользователя: №{document[7]}' + '\n'
+                text += f'Дата отправки запроса на пополнение баланса: {res_date}' + '\n'
+                text += f'Выполненно: {document[1]}' + '\n'
+                text += f'Пользователю: {document[2]}' + '\n'
+                text += f'Начислено: {document[6]}₸' + '\n'
+            elif doc_type_id == '4':
+                text = f'Запрос на пополнение баланса пользователя: №{document[7]}' + '\n'
+                text += f'Дата отправки запроса: {res_date}' + '\n'
+                text += f'Пользователю: {document[2]}' + '\n'
+                user = db.get_data(table='users', where=1, operand1='id', operand2=document[2])[0]
+                link = f"https://t.me/{user[5]}"
+                text += f'Ссылка на пользователя: {link}'
+                document_type_ikm.add(InlineKeyboardButton(text='Выполнить', callback_data=cb.new(id=document[2], action='add_balance')))
         document_type_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=doc_type_id, action='back')))
         return text, document_type_ikm
+
+

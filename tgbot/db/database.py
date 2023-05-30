@@ -28,6 +28,8 @@ class DataBase:
     def get_data(self, **kwargs) -> list:
         if 'where' in kwargs and 'order_by' in kwargs:
             self.cursor.execute(f"SELECT * FROM {kwargs['table']} WHERE {kwargs['operand1']} = {kwargs['operand2']} ORDER BY {kwargs['operand3']} DESC")
+        elif 'order_by' in kwargs:
+            self.cursor.execute(f"SELECT * FROM {kwargs['table']} ORDER BY {kwargs['operand1']} DESC")
         elif 'where' in kwargs and 'get_name_product' not in kwargs and 'order_by' not in kwargs:
             if kwargs['where'] == 1:
                 self.cursor.execute(f'SELECT * FROM {kwargs["table"]} WHERE {kwargs["operand1"]} = "{kwargs["operand2"]}"')

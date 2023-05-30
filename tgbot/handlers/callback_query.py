@@ -891,7 +891,7 @@ async def add_balance_user_callback_query(callback: types.CallbackQuery, callbac
     else:
         async with state.proxy() as data:
             if data['back_id'] == 2:
-                text, keyboard = Keyboards.get_document(data['document_id'])
+                text, keyboard = Keyboards.get_document(data['document_id'], data['doc_type_id'])
                 await callback.message.edit_text(text=text,
                                                  reply_markup=keyboard)
             else:
@@ -902,7 +902,7 @@ async def add_balance_user_callback_query(callback: types.CallbackQuery, callbac
 
 
 @dp.callback_query_handler(CallbackData('document_types', 'id', 'action').filter(), state=AdminStatesGroup.documents)
-async def get_documents_callback_query(callback: types.CallbackQuery, callback_data: dict):
+async def get_documents_callback_query(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
     if callback_data['action'] == 'back':
         await AdminStatesGroup.start.set()
         await callback.message.edit_text(text='Админ! Добро пожаловать в FoodsMarket!',
@@ -910,6 +910,8 @@ async def get_documents_callback_query(callback: types.CallbackQuery, callback_d
     else:
         MainPage.entries = 10
         text, keyboard = Keyboards.get_documents(callback_data['id'])
+        async with state.proxy() as data:
+            data['doc_type_id'] = callback_data['id']
         await callback.message.edit_text(text=text,
                                          reply_markup=keyboard)
     await callback.answer()
@@ -929,11 +931,12 @@ async def get_document_callback_query(callback: types.CallbackQuery, callback_da
                                              reply_markup=keyboard)
         else:
             await AdminStatesGroup.document.set()
-            text, keyboard = Keyboards.get_document(callback_data['id'])
             async with state.proxy() as data:
+                text, keyboard = Keyboards.get_document(callback_data['id'], data['doc_type_id'])
                 data['document_id'] = callback_data['id']
             await callback.message.edit_text(text=text,
-                                             reply_markup=keyboard)
+                                             reply_markup=keyboard,
+                                             parse_mode='HTML')
     await callback.answer()
 
 
