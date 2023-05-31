@@ -278,6 +278,20 @@ class DataBase:
         doc_type_id = self.cursor.fetchall()[0][0]
         return doc_type_id
 
+    def get_orders_dates(self):
+        self.cursor.execute(f'SELECT reg_date / 10000 FROM orders WHERE is_paid = 1 ORDER BY reg_date / 10000 DESC')
+        dates1 = self.cursor.fetchall()
+        dates2 = []
+        for date in dates1:
+            if date[0] not in dates2:
+                dates2.append(date[0])
+        return dates2
+
+    def get_orders_by_date(self, **kwargs):
+        self.cursor.execute(f'SELECT * FROM orders WHERE is_paid = 1 AND reg_date LIKE "{kwargs["date"]}%" ORDER BY reg_date DESC')
+        orders = self.cursor.fetchall()
+        return orders
+
 
 #######################################################################DB-OBJECT###################################################################################
 

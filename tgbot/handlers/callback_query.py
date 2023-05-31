@@ -923,21 +923,51 @@ async def get_document_callback_query(callback: types.CallbackQuery, callback_da
         text, keyboard = Keyboards.get_document_types()
         await callback.message.edit_text(text=text,
                                          reply_markup=keyboard)
-    else:
-        if callback_data['action'] == 'up_page' or callback_data['action'] == 'down_page':
-            Keyboards.change_page(callback_data['action'])
-            text, keyboard = Keyboards.get_documents(callback_data['id'])
-            await callback.message.edit_text(text=text,
-                                             reply_markup=keyboard)
-        else:
-            await AdminStatesGroup.document.set()
-            async with state.proxy() as data:
-                text, keyboard = Keyboards.get_document(callback_data['id'], data['doc_type_id'])
-                data['document_id'] = callback_data['id']
-            await callback.message.edit_text(text=text,
-                                             reply_markup=keyboard,
-                                             parse_mode='HTML')
+    if callback_data['action'] == 'generate_report':
+        text, keyboard = Keyboards.get_orders_date()
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+    if callback_data['action'] == 'up_page' or callback_data['action'] == 'down_page':
+        Keyboards.change_page(callback_data['action'])
+        text, keyboard = Keyboards.get_documents(callback_data['id'])
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+    if callback_data['action'] == 'document':
+        await AdminStatesGroup.document.set()
+        async with state.proxy() as data:
+            text, keyboard = Keyboards.get_document(callback_data['id'], data['doc_type_id'])
+            data['document_id'] = callback_data['id']
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard,
+                                         parse_mode='HTML')
     await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('date', 'id', 'action').filter(), state=AdminStatesGroup.documents)
+async def generate_report(callback: types.CallbackQuery, callback_data: dict, state: FSMContext):
+    if callback_data['action'] == 'back':
+        async with state.proxy() as data:
+            text, keyboard = Keyboards.get_documents(data['doc_type_id'])
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+    if callback_data['action'] == 'up_page' or callback_data['action'] == 'down_page':
+        Keyboards.change_page(callback_data['action'])
+        text, keyboard = Keyboards.get_orders_date()
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+    if callback_data['action'] == 'date':
+        text, keyboard = Keyboards.get_report_for_orders(callback_data['id'])
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
+    await callback.answer()
+
+
+@dp.callback_query_handler(CallbackData('report_for_orders', 'action').filter(), state=AdminStatesGroup.documents)
+async def back_report(callback: types.CallbackQuery, callback_data: dict):
+    if callback_data['action'] == 'back':
+        text, keyboard = Keyboards.get_orders_date()
+        await callback.message.edit_text(text=text,
+                                         reply_markup=keyboard)
 
 
 @dp.callback_query_handler(CallbackData('document', 'id', 'action').filter(), state=AdminStatesGroup.document)

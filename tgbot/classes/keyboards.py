@@ -911,11 +911,11 @@ class Keyboards:
     def get_documents(doc_type_id: int) -> tuple:
         cb = CallbackData('document', 'id', 'action')
         text = 'Выберите документ:'
+        documents_type_ikm = InlineKeyboardMarkup(row_width=1)
         if doc_type_id == '5':
             documents = db.get_data(table='orders', order_by=1, operand1='id')
         else:
             documents = db.get_data(table='documents', where=1, order_by=1, operand1='doc_type_id', operand2=doc_type_id, operand3='id')
-        documents_type_ikm = InlineKeyboardMarkup(row_width=1)
         buttons = []
         if len(documents) > 10:
             if MainPage.entries != 10:
@@ -939,8 +939,52 @@ class Keyboards:
                     res_date = str(document[4])[6:8] + '.' + str(document[4])[4:6] + '.' + str(document[4])[2:4] + ' ' + str(document[4])[8:10] + ':' + str(document[4])[10:12]
                 buttons.append(InlineKeyboardButton(text=res_date, callback_data=cb.new(id=document[0], action='document')))
             documents_type_ikm.add(*buttons)
+        if doc_type_id == '5':
+            documents_type_ikm.add(InlineKeyboardButton(text='Сформировать отчёт', callback_data=cb.new(id=0, action='generate_report')))
         documents_type_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
         return text, documents_type_ikm
+
+    @staticmethod
+    def get_orders_date():
+        cb = CallbackData('date', 'id', 'action')
+        text = 'Выберите дату:'
+        orders_date_ikm = InlineKeyboardMarkup(row_width=1)
+        dates = db.get_orders_dates()
+        buttons = []
+        if len(dates) > 10:
+            if MainPage.entries != 10:
+                orders_date_ikm.add(InlineKeyboardButton(text='↑', callback_data=cb.new(id=0, action='up_page')))
+            for date in dates[MainPage.entries - 10:MainPage.entries]:
+                res_date = str(date)[6:8] + '.' + str(date)[4:6] + '.' + str(date)[2:4]
+                buttons.append(InlineKeyboardButton(text=res_date, callback_data=cb.new(id=date, action='date')))
+            orders_date_ikm.add(*buttons)
+            if MainPage.entries < len(dates):
+                orders_date_ikm.add(InlineKeyboardButton(text='↓', callback_data=cb.new(id=0, action='down_page')))
+        else:
+            for date in dates:
+                res_date = str(date)[6:8] + '.' + str(date)[4:6] + '.' + str(date)[2:4]
+                buttons.append(InlineKeyboardButton(text=res_date, callback_data=cb.new(id=date, action='date')))
+            orders_date_ikm.add(*buttons)
+        orders_date_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=-1, action='back')))
+        return text, orders_date_ikm
+
+    @staticmethod
+    def get_report_for_orders(date: int):
+        cb = CallbackData('report_for_orders', 'action')
+        report_for_orders_ikm = InlineKeyboardMarkup(row_width=1)
+        res_date = str(date)[6:8] + '.' + str(date)[4:6] + '.' + str(date)[2:4]
+        text = f'Отчёт по заказам за {res_date}\n'
+        text += '--------------------------------------------------\n'
+        orders = db.get_orders_by_date(date=date)
+        total_sum = 0
+        for order in orders:
+            text += f'№{order[0]} Пользователем: {order[1]} Сумма: {order[5]}₸\n'
+            total_sum += order[5]
+        text += '--------------------------------------------------\n'
+        text += f'Всего заказов: {len(orders)}\n'
+        text += f'Общая сумма всех заказов: {total_sum}₸\n'
+        report_for_orders_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(action='back')))
+        return text, report_for_orders_ikm
 
     @staticmethod
     def change_page(state: str):
@@ -956,7 +1000,7 @@ class Keyboards:
         text = ''
         if doc_type_id == '5':
             order = db.get_data(table='orders', where=1, operand1='id', operand2=doc_id)[0]
-            order_items = db.get_data(table='order_items', where=1, operand1='id', operand2=doc_id)
+            order_items = db.get_data(table='order_items', where=1, operand1='order_id', operand2=doc_id)
             res_date = str(order[2])[6:8] + '.' + str(order[2])[4:6] + '.' + str(order[2])[2:4] + ' ' + str(order[2])[8:10] + ':' + str(order[2])[10:12]
             i, total_cost = 1, 0
             is_paid, is_delivered = ['Не оплачен', 'Оплачен'][order[3]], ['Не доставлен', 'Доставлен'][order[4]]
