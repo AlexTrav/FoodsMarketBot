@@ -1051,5 +1051,3 @@ class Keyboards:
                 document_type_ikm.add(InlineKeyboardButton(text='Выполнить', callback_data=cb.new(id=document[2], action='add_balance')))
         document_type_ikm.add(InlineKeyboardButton(text='Назад', callback_data=cb.new(id=doc_type_id, action='back')))
         return text, document_type_ikm
-
-
